@@ -19,23 +19,39 @@ function Help() {
               {[
                 {
                   question: 'Wie erstelle ich eine neue Kategorie?',
-                  answer: 'Gehe zu "Kategorien" und klicke auf "Neue Kategorie". Fülle das Formular aus und speichere.'
+                  answer: 'Klicke im Dashboard oder in der Sidebar auf "Neue Kategorie". Wähle einen Namen, Typ (Normal oder Sparen), eine Einheit und optional die automatische Erstellung. Nach dem Speichern erscheint die Kategorie in der Sidebar.'
+                },
+                {
+                  question: 'Was ist der Unterschied zwischen Normal- und Spar-Kategorien?',
+                  answer: 'Normal-Kategorien können beliebige Einheiten verwenden (€, %, kg, h, etc.). Spar-Kategorien verwenden immer € und bieten zusätzlich die Möglichkeit, Einzahlungen zu erfassen. So kannst du den Gewinn/Verlust deiner Investments oder Sparkonten verfolgen.'
                 },
                 {
                   question: 'Kann ich meine Daten exportieren?',
-                  answer: 'Ja, in der Tabellenansicht jeder Kategorie findest du einen Export-Button, um die Daten dieser Kategorie als Excel-Datei herunterzuladen.'
+                  answer: 'Ja! Du kannst einzelne Kategorien über den Export-Button in der Tabellenansicht exportieren oder alle Daten gleichzeitig über den Export-Button im Dashboard. Die Daten werden als Excel-Datei heruntergeladen.'
                 },
                 {
-                  question: 'Werden meine Daten automatisch gespeichert?',
-                  answer: 'Ja, alle Änderungen werden automatisch in der lokalen Datenbank gespeichert.'
+                  question: 'Wie funktioniert die automatische Eintrags-Erstellung?',
+                  answer: 'Wenn du bei einer Kategorie "Automatische Einträge erstellen" aktivierst, wird zu Beginn jedes neuen Monats automatisch ein Eintrag mit Wert 0 erstellt. Das ist praktisch für monatliche Tracking-Daten.'
                 },
                 {
-                  question: 'Was bedeutet "Auto-Erstellung"?',
-                  answer: 'Kategorien mit aktivierter Auto-Erstellung erhalten automatisch einen Eintrag am Monatsanfang, falls noch keiner für den aktuellen Monat existiert.'
+                  question: 'Welche Funktionen bietet das Dashboard?',
+                  answer: 'Das Dashboard zeigt dir KPI-Karten (Gesamt-Einträge, Gesamtwert, Spar-Gewinn), eine Kategorieübersicht mit Sparklines, Zeitreihen-Diagramme zur Wertentwicklung und Filter-Optionen. Du kannst auf KPI-Karten klicken, um nach Kategorietyp zu filtern.'
                 },
                 {
-                  question: 'Wie funktionieren Spar-Kategorien?',
-                  answer: 'Spar-Kategorien verwenden immer Euro (€) als Einheit und können zusätzlich Einzahlungen verfolgen. Der aktuelle Stand wird aus dem letzten Wert ermittelt.'
+                  question: 'Wie bearbeite oder lösche ich Einträge?',
+                  answer: 'In der Tabellenansicht einer Kategorie kannst du jeden Eintrag über die Aktions-Buttons bearbeiten oder löschen. Neue Einträge fügst du über die "Neuer Eintrag"-Zeile am Anfang der Tabelle hinzu.'
+                },
+                {
+                  question: 'Was zeigen die Diagramme in der Kategorieansicht?',
+                  answer: 'Die Kategorieansicht bietet drei Tabs: Daten (Tabelle mit allen Einträgen), Diagramme (Zeitreihen-Visualisierung deiner Werte) und Einstellungen (zum Bearbeiten der Kategorie). Bei Spar-Kategorien werden zusätzlich Einzahlungen und Gewinn/Verlust angezeigt.'
+                },
+                {
+                  question: 'Kann ich Kategorien duplizieren?',
+                  answer: 'Ja, in der Kategorieübersicht findest du bei jeder Kategorie eine Duplikations-Funktion. Dies erstellt eine Kopie der Kategorie mit allen Einstellungen, aber ohne Einträge.'
+                },
+                {
+                  question: 'Wie kann ich nach bestimmten Einträgen suchen?',
+                  answer: 'In der Tabellenansicht stehen dir umfangreiche Filter zur Verfügung: Suche nach Kommentar, Filter nach Datum (von/bis) und nach Wert (min/max). Die Ergebnisse werden in Echtzeit aktualisiert.'
                 },
               ].map((faq, index) => (
                 <div key={index} className="pb-4 border-b border-neutral-200 last:border-0">

@@ -7,6 +7,7 @@ to Excel workbooks with proper formatting.
 
 from typing import List, Optional
 from io import BytesIO
+from datetime import datetime
 
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -19,6 +20,24 @@ from .logger import get_logger
 
 
 logger = get_logger("export")
+
+
+def _format_date_to_german(date_str: str) -> str:
+    """
+    Convert date from YYYY-MM format to dd.MM.yyyy format.
+    
+    Args:
+        date_str: Date string in YYYY-MM format
+        
+    Returns:
+        Date string in dd.MM.yyyy format (with 01 as day)
+    """
+    try:
+        date_obj = datetime.strptime(date_str, "%Y-%m")
+        return date_obj.strftime("01.%m.%Y")
+    except ValueError:
+        # If format is unexpected, return as-is
+        return date_str
 
 
 def _save_workbook(wb: Workbook) -> BytesIO:
@@ -131,7 +150,7 @@ def generate_workbook(
                 # Headers
                 headers = [
                     "Kategorie", "Datum", "Wert", "Einzahlung",
-                    "Einheit", "Kommentar", "Auto_generated"
+                    "Einheit", "Kommentar"
                 ]
                 ws.append(headers)
                 _apply_header_formatting(ws, headers)
@@ -151,12 +170,11 @@ def generate_workbook(
                 for entry in entries:
                     ws.append([
                         cat.name,
-                        entry.date,
+                        _format_date_to_german(entry.date),
                         entry.value,
                         entry.deposit if entry.deposit is not None else "",
                         cat.unit or "",
-                        entry.comment or "",
-                        bool(entry.auto_generated)
+                        entry.comment or ""
                     ])
                 
                 # Auto-adjust column widths

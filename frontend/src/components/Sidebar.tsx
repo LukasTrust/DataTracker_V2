@@ -4,7 +4,8 @@ import {
   HelpCircle,
   BarChart3,
   PiggyBank,
-  TrendingUp
+  TrendingUp,
+  Plus
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCategories } from '../contexts/CategoryContext'
@@ -17,7 +18,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/help', icon: HelpCircle, label: 'Hilfe & Support' },
 ]
 
 function Sidebar() {
@@ -76,6 +76,36 @@ function Sidebar() {
           ))}
         </ul>
 
+        {/* Neue Kategorie Button */}
+        <ul className="space-y-1 mt-1">
+          <li>
+            <NavLink
+              to="/categories/new"
+              className={({ isActive }) =>
+                clsx(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-default',
+                  'text-sm font-medium',
+                  isActive
+                    ? 'bg-primary-50 text-primary-700'
+                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Plus 
+                    className={clsx(
+                      'w-5 h-5 transition-default',
+                      isActive ? 'text-primary-600' : 'text-neutral-400'
+                    )} 
+                  />
+                  <span>Neue Kategorie</span>
+                </>
+              )}
+            </NavLink>
+          </li>
+        </ul>
+
         {/* Categories Section */}
         <div className="mt-6">
           <div className="px-3 mb-2">
@@ -126,9 +156,38 @@ function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-neutral-200">
-        <div className="text-xs text-neutral-500">
-          <p className="font-medium text-neutral-700 mb-1">DataTracker V2</p>
+      <div className="border-t border-neutral-200">
+        {/* Hilfe & Support Link */}
+        <div className="px-3 py-3">
+          <NavLink
+            to="/help"
+            className={({ isActive }) =>
+              clsx(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-default',
+                'text-sm font-medium',
+                isActive
+                  ? 'bg-primary-50 text-primary-700'
+                  : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+              )
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <HelpCircle 
+                  className={clsx(
+                    'w-5 h-5 transition-default',
+                    isActive ? 'text-primary-600' : 'text-neutral-400'
+                  )} 
+                />
+                <span>Hilfe & Support</span>
+              </>
+            )}
+          </NavLink>
+        </div>
+        
+        {/* App Version */}
+        <div className="px-6 py-3 text-xs text-neutral-500">
+          <p className="font-medium text-neutral-700">DataTracker V2</p>
         </div>
       </div>
     </aside>
