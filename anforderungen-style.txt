@@ -1,0 +1,156 @@
+🎨 Style-Anforderungen für Tailwind (Designsystem für die lokale Verbrauchs- und Spar-Tracking-App)
+🌈 Farbpalette (modern, klar, produktivitätsorientiert)
+
+Ziel: Ruhige, moderne Farben mit Fokus auf Lesbarkeit und Datenvisualisierung.
+Basis: Neutraler Hintergrund + Akzentfarben für Kategorien & Diagramme.
+
+--primary: #2563eb;      /* Blau – Hauptfarbe, Buttons, Akzente */
+--primary-hover: #1d4ed8;
+--secondary: #10b981;    /* Grün – positive Trends, Sparen, Erfolg */
+--secondary-hover: #059669;
+--danger: #ef4444;       /* Rot – Warnungen, Löschbestätigungen */
+--warning: #f59e0b;      /* Orange – Hinweise, Tooltips */
+--background: #f9fafb;   /* Hellgrau – App-Hintergrund */
+--card: #ffffff;         /* Karten, Panels, Modalfenster */
+--border: #e5e7eb;       /* Rahmenfarbe */
+--text-primary: #111827; /* Haupttext */
+--text-secondary: #6b7280; /* Beschriftungen, sekundärer Text */
+--text-muted: #9ca3af;   /* Platzhalter, Labels */
+--chart-blue: #3b82f6;
+--chart-green: #22c55e;
+--chart-orange: #f97316;
+--chart-gray: #94a3b8;
+
+
+Dark Mode (optional, später erweiterbar):
+
+Hintergrund: #1e293b
+
+Karten: #334155
+
+Text hell: #f1f5f9
+
+Primärfarbe leicht entsättigt.
+
+🧱 Layout & Spacing
+
+App-Breite: max-w-screen-xl, horizontal zentriert
+
+Innenabstände: p-6 für Hauptbereiche, p-4 in Cards
+
+Grid: 12-Spalten-Layout (z. B. Diagramme 8 Spalten, Sidebar 4)
+
+Abstände: gap-4 für Standard, gap-6 für größere Sektionen
+
+Rundungen: rounded-2xl für Panels, rounded-lg für Inputs/Buttons
+
+Schatten: shadow-md für Karten, shadow-lg für Modale
+
+Rahmen: dezente border border-gray-200
+
+✍️ Typografie
+
+Font: Inter oder Rubik (systemfreundlich, modern)
+
+Überschriften:
+
+text-2xl font-semibold für Seitenüberschrift
+
+text-lg font-medium für Paneltitel
+
+Text:
+
+Standard: text-base text-gray-800
+
+Labels / Beschreibungen: text-sm text-gray-500
+
+Zahlenwerte (Kennzahlen):
+
+text-2xl font-bold text-primary
+
+Bei negativen Werten: text-red-500
+
+🧩 Komponenten-Styling
+Buttons
+
+Primär: bg-primary text-white hover:bg-primary-hover rounded-lg px-4 py-2 font-medium
+
+Sekundär: bg-gray-100 text-gray-700 hover:bg-gray-200
+
+Danger: bg-danger text-white hover:bg-red-600
+
+Disabled: opacity-50 cursor-not-allowed
+
+Inputs & Dropdowns
+
+border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary
+
+Platzhalter in text-gray-400
+
+Labels über dem Feld: text-sm text-gray-600 mb-1
+
+Karten / Panels
+
+Container: bg-card shadow-md rounded-2xl p-4
+
+Header: text-lg font-medium text-gray-800 mb-2
+
+Optional: Subheader in text-sm text-gray-500
+
+Tabellen
+
+Kopfzeile: bg-gray-50 text-gray-700 font-medium
+
+Zeilen: hover:bg-gray-100 transition
+
+Rahmen: border-b border-gray-200
+
+Aktive/ausgewählte Zeile: bg-blue-50 border-l-4 border-primary
+
+Diagrammbereich
+
+Container: bg-white rounded-xl shadow p-4
+
+Kennzahlenpanel: grid grid-cols-3 gap-4 text-center
+
+Werte: text-2xl font-semibold
+
+Labels: text-sm text-gray-500
+
+Tooltips: abgerundet, bg-gray-800 text-white text-xs px-2 py-1 rounded
+
+🧭 Navigation / Struktur
+
+Sidebar (optional):
+
+Hintergrund: bg-gray-100
+
+Aktiver Menüpunkt: bg-primary text-white rounded-md
+
+Icons + Text nebeneinander mit gap-2
+
+Header (App-Bar):
+
+flex items-center justify-between p-4 border-b border-gray-200 bg-white shadow-sm
+
+Titel links, Filter/Export-Buttons rechts
+
+💬 Tooltips & Hilfetexte
+
+Kleine Icons mit ? oder i Symbol (text-gray-400 hover:text-gray-600)
+
+Tooltip-Container: bg-gray-800 text-white text-xs rounded-md px-2 py-1 shadow-lg
+
+Optionaler „Tooltip aktivieren/deaktivieren“-Schalter in Einstellungen
+
+💡 Gesamtästhetik
+
+Minimalistisch & datenzentriert
+
+Großzügige Weißräume (nicht zu gedrängt)
+
+Sanfte Übergänge: transition-all duration-200
+
+Fokus auf Lesbarkeit und klare Hierarchien
+
+Keine verspielten Farben – sachlich, ruhig, produktiv
