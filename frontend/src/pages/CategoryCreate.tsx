@@ -4,7 +4,7 @@ import { Save, X, FolderPlus } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import Card from '../components/Card'
 import Button from '../components/Button'
-import { createCategory } from '../api/api'
+import { createCategory } from '../api'
 import { useNotification } from '../contexts/NotificationContext'
 import { useCategories } from '../contexts/CategoryContext'
 
@@ -13,7 +13,12 @@ function CategoryCreate() {
   const { showSuccess, showError } = useNotification()
   const { addCategory } = useCategories()
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    type: 'normal' | 'sparen'
+    unit: string
+    auto_create: boolean
+  }>({
     name: '',
     type: 'normal',
     unit: '',

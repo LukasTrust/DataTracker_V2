@@ -9,22 +9,21 @@ import CategoryTable from '../components/categories/CategoryTable'
 import CategoryGraphs from '../components/categories/CategoryGraphs'
 import CategoryEditForm from '../components/categories/CategoryEditForm'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { deleteCategory, fetchEntries, updateCategory, duplicateCategory } from '../api/api'
-import { Category, Entry, TabType, CategoryFormData } from '../types/category'
+import { deleteCategory, updateCategory, duplicateCategory } from '../api'
+import { Category, TabType, CategoryFormData } from '../types/category'
 import { useNotification } from '../contexts/NotificationContext'
 import { useCategories } from '../contexts/CategoryContext'
+import { useEntries } from '../hooks/useEntries'
 
 function Categories() {
   const navigate = useNavigate()
   const { id: categoryIdParam } = useParams<{ id: string }>()
   const { showSuccess, showError } = useNotification()
-  const { categories, loading, updateCategoryInList, removeCategoryFromList, addCategory } = useCategories()
+  const { categories, loading, updateCategoryInList, removeCategoryFromList, addCategory, refreshCategories } = useCategories()
   
   // State Management
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
-  const [entries, setEntries] = useState<Entry[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('data')
-  const [loadingEntries, setLoadingEntries] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; categoryId: number | null }>({ 
     isOpen: false, 
     categoryId: null 
@@ -35,6 +34,9 @@ function Categories() {
     unit: '',
     auto_create: false
   })
+
+  // Custom Hook für Entries
+  const { entries, loading: loadingEntries, refetch: refetchEntries } = useEntries(selectedCategory?.id ?? null)
 
   // Effects
   useEffect(() => {
@@ -55,17 +57,7 @@ function Categories() {
       unit: category.unit,
       auto_create: category.auto_create
     })
-    
-    // Einträge laden
-    try {
-      setLoadingEntries(true)
-      const entriesData = await fetchEntries(category.id)
-      setEntries(entriesData)
-    } catch (error) {
-      console.error('Fehler beim Laden der Einträge:', error)
-    } finally {
-      setLoadingEntries(false)
-    }
+    // Entries werden automatisch durch useEntries Hook geladen
   }
 
   const handleDoubleClickCategory = async (category: Category) => {
@@ -87,7 +79,7 @@ function Categories() {
       removeCategoryFromList(categoryId)
       if (selectedCategory?.id === categoryId) {
         setSelectedCategory(null)
-        setEntries([])
+        // Entries werden automatisch geleert wenn selectedCategory null wird
       }
       showSuccess('Die Kategorie wurde erfolgreich gelöscht.')
     } catch (error) {
@@ -149,7 +141,7 @@ function Categories() {
 
   const handleBackToList = () => {
     setSelectedCategory(null)
-    setEntries([])
+    // Entries werden automatisch geleert wenn selectedCategory null wird
     setActiveTab('data')
   }
 
@@ -219,7 +211,10 @@ function Categories() {
             entries={entries} 
             loading={loadingEntries}
             category={selectedCategory}
-            onEntriesChange={() => selectCategory(selectedCategory)}
+            onEntriesChange={async () => {
+              await refetchEntries() // Entries neu laden
+              await refreshCategories() // Kategorien neu laden (für Statistiken in Sidebar)
+            }}
           />
         )}
         

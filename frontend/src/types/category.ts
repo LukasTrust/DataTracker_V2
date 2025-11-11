@@ -2,7 +2,7 @@ export interface Category {
   id: number
   name: string
   icon?: string
-  type: string
+  type: 'normal' | 'sparen'
   unit: string
   auto_create: boolean
 }
@@ -21,7 +21,7 @@ export type TabType = 'data' | 'graphs' | 'settings'
 
 export interface CategoryFormData {
   name: string
-  type: string
+  type: 'normal' | 'sparen'
   unit: string
   auto_create: boolean
 }

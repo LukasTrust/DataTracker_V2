@@ -4,6 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import Card from '../Card'
 import Button from '../Button'
 import { Category, Entry } from '../../types/category'
+import { formatDateISO, getTodayISO } from '../../utils/dateFormatter'
 
 interface CategoryGraphsProps {
   entries: Entry[]
@@ -27,8 +28,8 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
   const setCurrentYear = () => {
     const now = new Date()
     const yearStart = new Date(now.getFullYear(), 0, 1)
-    setStartDate(yearStart.toISOString().split('T')[0])
-    setEndDate(now.toISOString().split('T')[0])
+    setStartDate(formatDateISO(yearStart))
+    setEndDate(getTodayISO())
   }
   
   // Filtere Einträge basierend auf Datum

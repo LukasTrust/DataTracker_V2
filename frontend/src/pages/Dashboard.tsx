@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { 
   FolderOpen, 
   TrendingUp, 
@@ -12,100 +12,22 @@ import PageHeader from '../components/PageHeader'
 import Card from '../components/Card'
 import Button from '../components/Button'
 import KPICard from '../components/KPICard'
-import CategoryCard, { CategoryCardData } from '../components/CategoryCard'
+import CategoryCard from '../components/CategoryCard'
 import DashboardFilterBar, { DashboardFilters } from '../components/DashboardFilterBar'
 import DashboardCharts from '../components/DashboardCharts'
-import { fetchDashboardStats, fetchDashboardTimeseries, exportData } from '../api/api'
-import { useNotification } from '../contexts/NotificationContext'
-
-interface DashboardStats {
-  totalCategories: number
-  categorySums: CategoryCardData[]
-}
-
-interface TimeseriesData {
-  totalValueData: { date: string; value: number }[]
-  sparenData: { date: string; value: number; deposits: number; profit: number }[]
-  categoryComparison: { name: string; value: number; type: string }[]
-}
+import { useDashboardStats } from '../hooks/useDashboardStats'
+import { useExport } from '../hooks/useExport'
 
 function Dashboard() {
   const navigate = useNavigate()
-  const { showError, showSuccess, showInfo } = useNotification()
-  const [stats, setStats] = useState<DashboardStats>({
-    totalCategories: 0,
-    categorySums: [],
-  })
-  const [timeseriesData, setTimeseriesData] = useState<TimeseriesData>({
-    totalValueData: [],
-    sparenData: [],
-    categoryComparison: [],
-  })
-  const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<DashboardFilters>({
     categoryType: 'all',
   })
   const [activeKPI, setActiveKPI] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadDashboardData()
-  }, [filters])
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true)
-      
-      // Fetch main stats
-      const statsData = await fetchDashboardStats()
-      
-      // Apply category type filter
-      let filteredSums = statsData.categorySums
-      if (filters.categoryType && filters.categoryType !== 'all') {
-        filteredSums = filteredSums.filter((cat: CategoryCardData) => 
-          cat.type === filters.categoryType
-        )
-      }
-      
-      setStats({
-        totalCategories: statsData.totalCategories,
-        categorySums: filteredSums,
-      })
-      
-      // Fetch timeseries data
-      const timeseriesParams = {
-        start_date: filters.startDate,
-        end_date: filters.endDate,
-        category_type: filters.categoryType,
-      }
-      const timeseries = await fetchDashboardTimeseries(timeseriesParams)
-      setTimeseriesData(timeseries)
-      
-    } catch (error) {
-      console.error('Fehler beim Laden der Dashboard-Daten:', error)
-      showError('Fehler beim Laden der Dashboard-Daten')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleExport = async () => {
-    try {
-      showInfo('Export wird vorbereitet...')
-      const blob = await exportData()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'datatracker_export.xlsx'
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      showSuccess('Daten erfolgreich exportiert')
-    } catch (error) {
-      console.error('Export-Fehler:', error)
-      showError('Fehler beim Exportieren')
-    }
-  }
+  // Custom Hooks
+  const { stats, timeseriesData, loading } = useDashboardStats(filters)
+  const { exportAll: handleExport } = useExport()
 
   const handleFilterReset = () => {
     setFilters({ categoryType: 'all' })
@@ -128,17 +50,17 @@ function Dashboard() {
     }
   }
 
-  // Calculate KPIs
-  const totalEntries = stats.categorySums.reduce((sum, cat) => sum + cat.entryCount, 0)
+  // Calculate KPIs - mit Null-Check
+  const totalEntries = stats?.categorySums.reduce((sum, cat) => sum + cat.entryCount, 0) ?? 0
   // Only include categories with € unit in total value
-  const totalValue = stats.categorySums
+  const totalValue = stats?.categorySums
     .filter(cat => cat.unit === '€')
-    .reduce((sum, cat) => sum + cat.totalValue, 0)
-  const sparenCategories = stats.categorySums.filter(cat => cat.type === 'sparen')
+    .reduce((sum, cat) => sum + cat.totalValue, 0) ?? 0
+  const sparenCategories = stats?.categorySums.filter(cat => cat.type === 'sparen') ?? []
   const totalProfit = sparenCategories.reduce((sum, cat) => sum + (cat.profit || 0), 0)
   const totalDeposits = sparenCategories.reduce((sum, cat) => sum + cat.totalDeposits, 0)
 
-  if (loading) {
+  if (loading || !stats || !timeseriesData) {
     return (
       <>
         <PageHeader 
@@ -165,7 +87,7 @@ function Dashboard() {
         description="Deine persönliche Finanz- und Datenübersicht"
         actions={
           <>
-            <Button variant="secondary" onClick={loadDashboardData}>
+            <Button variant="secondary" onClick={() => window.location.reload()}>
               Aktualisieren
             </Button>
             <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => navigate('/categories/new')}>

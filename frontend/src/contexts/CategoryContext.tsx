@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { fetchCategories } from '../api/api'
+import { fetchCategories } from '../api'
 import { Category } from '../types/category'
 
 interface CategoryContextType {
