@@ -46,18 +46,18 @@ export const fetchEntries = async (categoryId: number) => {
   return response.data
 }
 
-export const createEntry = async (data: any) => {
-  const response = await api.post('/entries', data)
+export const createEntry = async (categoryId: number, data: any) => {
+  const response = await api.post(`/categories/${categoryId}/entries`, data)
   return response.data
 }
 
-export const updateEntry = async (id: number, data: any) => {
-  const response = await api.put(`/entries/${id}`, data)
+export const updateEntry = async (categoryId: number, entryId: number, data: any) => {
+  const response = await api.put(`/categories/${categoryId}/entries/${entryId}`, data)
   return response.data
 }
 
-export const deleteEntry = async (id: number) => {
-  const response = await api.delete(`/entries/${id}`)
+export const deleteEntry = async (categoryId: number, entryId: number) => {
+  const response = await api.delete(`/categories/${categoryId}/entries/${entryId}`)
   return response.data
 }
 

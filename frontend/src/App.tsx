@@ -15,6 +15,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/categories/new" element={<CategoryCreate />} />
+            <Route path="/categories/:id" element={<Categories />} />
             <Route path="/help" element={<Help />} />
           </Routes>
         </Layout>

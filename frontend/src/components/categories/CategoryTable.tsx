@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react'
-import { Plus, Edit2, Trash2, Calendar, X, Check, Download, Search, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Edit2, Trash2, X, Check, Download, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import Card from '../Card'
 import Button from '../Button'
 import ConfirmDialog from '../ConfirmDialog'
 import { Category, Entry } from '../../types/category'
-import { deleteEntry, updateEntry, exportCategory } from '../../api/api'
+import { deleteEntry, updateEntry, exportCategory, createEntry } from '../../api/api'
 import { useNotification } from '../../contexts/NotificationContext'
 
 interface CategoryTableProps {
@@ -17,10 +17,26 @@ interface CategoryTableProps {
 type SortField = 'date' | 'value' | 'deposit' | 'comment'
 type SortDirection = 'asc' | 'desc'
 
+interface NewEntryForm {
+  date: string
+  value: number | ''
+  deposit: number | ''
+  comment: string
+}
+
 function CategoryTable({ entries, loading, category, onEntriesChange }: CategoryTableProps) {
   const { showSuccess, showError } = useNotification()
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<Partial<Entry>>({})
+  
+  // State für neue Zeile
+  const [newEntryForm, setNewEntryForm] = useState<NewEntryForm>({
+    date: new Date().toISOString().split('T')[0],
+    value: '',
+    deposit: '',
+    comment: ''
+  })
+  const [savingNewEntry, setSavingNewEntry] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; entryId: number | null }>({
     isOpen: false,
@@ -33,7 +49,6 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
   const [dateTo, setDateTo] = useState('')
   const [valueMin, setValueMin] = useState('')
   const [valueMax, setValueMax] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
   
   // Sortierung States
   const [sortField, setSortField] = useState<SortField>('date')
@@ -152,11 +167,25 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
       ? filteredAndSortedEntries.reduce((sum, e) => sum + e.value, 0) / filteredAndSortedEntries.length
       : 0
     
+    // Sparen-spezifische Statistiken
+    let totalDeposit = 0
+    let profitLoss = 0
+    let profitLossPercentage = 0
+    
+    if (category.type === 'sparen') {
+      totalDeposit = filteredAndSortedEntries.reduce((sum, e) => sum + (e.deposit || 0), 0)
+      profitLoss = sum - totalDeposit
+      profitLossPercentage = totalDeposit > 0 ? (profitLoss / totalDeposit) * 100 : 0
+    }
+    
     return {
       count: filteredAndSortedEntries.length,
       total: entries.length,
       sum,
-      average
+      average,
+      totalDeposit,
+      profitLoss,
+      profitLossPercentage
     }
   }, [filteredAndSortedEntries, entries, category.type])
 
@@ -215,14 +244,60 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
 
   const saveEdit = async (entryId: number) => {
     try {
-      await updateEntry(entryId, editForm)
+      await updateEntry(category.id, entryId, editForm)
       setEditingId(null)
       setEditForm({})
       onEntriesChange()
-      showSuccess('Eintrag erfolgreich aktualisiert')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Fehler beim Aktualisieren des Eintrags:', error)
-      showError('Fehler beim Aktualisieren des Eintrags')
+      const errorMessage = error.response?.data?.detail || 'Fehler beim Aktualisieren des Eintrags'
+      showError(errorMessage)
+    }
+  }
+
+  const saveNewEntry = async () => {
+    // Validierung
+    if (newEntryForm.value === '' || newEntryForm.value === 0) {
+      showError('Bitte einen Wert eingeben')
+      return
+    }
+
+    if (category.type === 'sparen' && (newEntryForm.deposit === '' || newEntryForm.deposit === 0)) {
+      showError('Bitte eine Einzahlung eingeben')
+      return
+    }
+
+    setSavingNewEntry(true)
+    try {
+      // Datum von YYYY-MM-DD zu YYYY-MM konvertieren
+      const dateYYYYMM = newEntryForm.date.substring(0, 7) // nimmt nur YYYY-MM
+      
+      const entryData = {
+        category_id: category.id,
+        date: dateYYYYMM,
+        value: Number(newEntryForm.value),
+        deposit: category.type === 'sparen' ? Number(newEntryForm.deposit) : null,
+        comment: newEntryForm.comment || null
+      }
+      
+      await createEntry(category.id, entryData)
+      
+      // Formular zurücksetzen
+      setNewEntryForm({
+        date: new Date().toISOString().split('T')[0],
+        value: '',
+        deposit: '',
+        comment: ''
+      })
+      
+      showSuccess('Eintrag erfolgreich erstellt')
+      onEntriesChange()
+    } catch (error: any) {
+      console.error('Fehler beim Erstellen des Eintrags:', error)
+      const errorMessage = error.response?.data?.detail || 'Fehler beim Erstellen des Eintrags'
+      showError(errorMessage)
+    } finally {
+      setSavingNewEntry(false)
     }
   }
 
@@ -235,12 +310,12 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
     if (!entryId) return
 
     try {
-      await deleteEntry(entryId)
+      await deleteEntry(category.id, entryId)
       onEntriesChange()
-      showSuccess('Eintrag erfolgreich gelöscht')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Fehler beim Löschen des Eintrags:', error)
-      showError('Fehler beim Löschen des Eintrags')
+      const errorMessage = error.response?.data?.detail || 'Fehler beim Löschen des Eintrags'
+      showError(errorMessage)
     } finally {
       setDeleteConfirm({ isOpen: false, entryId: null })
     }
@@ -278,27 +353,13 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
     )
   }
 
-  if (entries.length === 0) {
-    return (
-      <Card className="p-12 text-center">
-        <Calendar className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-          Noch keine Einträge
-        </h3>
-        <p className="text-sm text-neutral-600 mb-6">
-          Füge deinen ersten Dateneintrag für diese Kategorie hinzu.
-        </p>
-        <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
-          Ersten Eintrag erstellen
-        </Button>
-      </Card>
-    )
-  }
+  // Zeige die Tabelle immer an, auch wenn keine Einträge vorhanden sind
+  // Die neue Zeile ist immer sichtbar
 
   return (
     <div className="space-y-4">
       {/* Statistik-Karten */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${category.type === 'sparen' ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
         <Card className="p-4">
           <div className="text-sm text-neutral-600 mb-1">Einträge</div>
           <div className="text-2xl font-bold text-neutral-900">
@@ -311,34 +372,51 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
           </div>
         </Card>
         
-        <Card className="p-4">
-          <div className="text-sm text-neutral-600 mb-1">
-            {category.type === 'sparen' ? 'Aktueller Stand' : 'Summe'}
-          </div>
-          <div className={`text-2xl font-bold ${getValueColorClass(statistics.sum)}`}>
-            {statistics.sum.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} {category.unit}
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="text-sm text-neutral-600 mb-1">Durchschnitt</div>
-          <div className="text-2xl font-bold text-neutral-900">
-            {statistics.average.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} {category.unit}
-          </div>
-        </Card>
-        
-        <Card className="p-4 flex items-center justify-center">
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Download className="w-4 h-4" />}
-            onClick={handleExport}
-            disabled={exporting || entries.length === 0}
-            className="w-full"
-          >
-            {exporting ? 'Exportiere...' : 'Excel Export'}
-          </Button>
-        </Card>
+        {category.type === 'sparen' ? (
+          // Sparen-spezifische Statistiken
+          <>
+            <Card className="p-4">
+              <div className="text-sm text-neutral-600 mb-1">Gesamt Einzahlung</div>
+              <div className="text-2xl font-bold text-neutral-900">
+                {statistics.totalDeposit.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} {category.unit}
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="text-sm text-neutral-600 mb-1">Aktueller Stand</div>
+              <div className="text-2xl font-bold text-blue-700">
+                {statistics.sum.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} {category.unit}
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="text-sm text-neutral-600 mb-1">Gewinn / Verlust</div>
+              <div className={`text-2xl font-bold ${statistics.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {statistics.profitLoss >= 0 ? '+' : ''}{statistics.profitLoss.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} {category.unit}
+                <div className="text-sm font-medium mt-1">
+                  ({statistics.profitLoss >= 0 ? '+' : ''}{statistics.profitLossPercentage.toFixed(2)}%)
+                </div>
+              </div>
+            </Card>
+          </>
+        ) : (
+          // Normale Statistiken
+          <>
+            <Card className="p-4">
+              <div className="text-sm text-neutral-600 mb-1">Summe</div>
+              <div className={`text-2xl font-bold ${getValueColorClass(statistics.sum)}`}>
+                {statistics.sum.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} {category.unit}
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="text-sm text-neutral-600 mb-1">Durchschnitt</div>
+              <div className="text-2xl font-bold text-neutral-900">
+                {statistics.average.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} {category.unit}
+              </div>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Filter und Suche */}
@@ -359,20 +437,20 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
               </div>
             </div>
             
-            {/* Filter Toggle Button */}
+            {/* Excel Export Button */}
             <Button
-              variant={showFilters ? 'primary' : 'secondary'}
+              variant="primary"
               size="sm"
-              icon={<SlidersHorizontal className="w-4 h-4" />}
-              onClick={() => setShowFilters(!showFilters)}
+              icon={<Download className="w-4 h-4" />}
+              onClick={handleExport}
+              disabled={exporting || entries.length === 0}
             >
-              Filter {showFilters ? 'ausblenden' : 'einblenden'}
+              {exporting ? 'Exportiere...' : 'Excel Export'}
             </Button>
           </div>
           
-          {/* Erweiterte Filter */}
-          {showFilters && (
-            <div className="mt-4 pt-4 border-t border-neutral-200">
+          {/* Erweiterte Filter - immer sichtbar */}
+          <div className="mt-4 pt-4 border-t border-neutral-200">
               {/* Schnell-Filter Buttons */}
               <div className="flex flex-wrap gap-2 mb-4">
                 <Button
@@ -394,7 +472,7 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
                   size="sm"
                   onClick={resetFilters}
                 >
-                  Alle anzeigen
+                  Zurücksetzen
                 </Button>
               </div>
               
@@ -453,7 +531,6 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
               </div>
             </div>
             </div>
-          )}
         </div>
       </Card>
 
@@ -522,6 +599,65 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
+              {/* Neue Zeile zum Erstellen eines Eintrags */}
+              <tr className="bg-blue-50/30 transition-colors border-l-4 border-l-blue-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <input
+                    type="date"
+                    value={newEntryForm.date}
+                    onChange={(e) => setNewEntryForm({ ...newEntryForm, date: e.target.value })}
+                    className="w-full px-3 py-2 border-0 rounded-md focus:ring-2 focus:ring-blue-400 outline-none bg-white/80 backdrop-blur-sm shadow-sm text-neutral-900 transition-all"
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <input
+                    type="number"
+                    value={newEntryForm.value}
+                    onChange={(e) => setNewEntryForm({ ...newEntryForm, value: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                    placeholder={`Wert in ${category.unit}`}
+                    className="w-28 px-3 py-2 border-0 rounded-md focus:ring-2 focus:ring-blue-400 outline-none bg-white/80 backdrop-blur-sm shadow-sm text-neutral-900 placeholder:text-neutral-400 transition-all"
+                    step="0.01"
+                  />
+                </td>
+                {category.type === 'sparen' && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm hidden md:table-cell">
+                    <input
+                      type="number"
+                      value={newEntryForm.deposit}
+                      onChange={(e) => setNewEntryForm({ ...newEntryForm, deposit: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                      placeholder={`Einzahlung`}
+                      className="w-28 px-3 py-2 border-0 rounded-md focus:ring-2 focus:ring-blue-400 outline-none bg-white/80 backdrop-blur-sm shadow-sm text-neutral-900 placeholder:text-neutral-400 transition-all"
+                      step="0.01"
+                    />
+                  </td>
+                )}
+                <td className="px-6 py-4 text-sm hidden lg:table-cell">
+                  <input
+                    type="text"
+                    value={newEntryForm.comment}
+                    onChange={(e) => setNewEntryForm({ ...newEntryForm, comment: e.target.value })}
+                    placeholder="Kommentar hinzufügen..."
+                    className="w-full px-3 py-2 border-0 rounded-md focus:ring-2 focus:ring-blue-400 outline-none bg-white/80 backdrop-blur-sm shadow-sm text-neutral-900 placeholder:text-neutral-400 transition-all"
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                  <span className="text-xs px-2 py-1 bg-green-600 text-white rounded-full">
+                    Neu
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                  <button
+                    onClick={saveNewEntry}
+                    disabled={savingNewEntry}
+                    className="px-3 py-1.5 text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 rounded transition-colors"
+                    title="Speichern"
+                  >
+                    {savingNewEntry ? '...' : 'Speichern'}
+                  </button>
+                </td>
+              </tr>
+              
+              {/* Bestehende Einträge */}
               {filteredAndSortedEntries.map((entry) => {
                 const isEditing = editingId === entry.id
                 

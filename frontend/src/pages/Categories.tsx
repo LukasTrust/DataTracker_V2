@@ -220,13 +220,6 @@ function Categories() {
             >
               Zurück zur Übersicht
             </Button>
-            <Button 
-              variant="primary" 
-              icon={<Plus className="w-4 h-4" />}
-              onClick={() => {/* TODO: Neuen Eintrag erstellen */}}
-            >
-              Neuer Eintrag
-            </Button>
           </div>
         }
       />

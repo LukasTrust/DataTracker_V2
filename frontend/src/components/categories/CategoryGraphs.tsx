@@ -61,6 +61,25 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
       : 0
   }), [filteredEntries])
 
+  // Berechne Sparen-Statistiken (Einzahlung vs. aktueller Wert)
+  const sparenStats = useMemo(() => {
+    if (category.type !== 'sparen' || filteredEntries.length === 0) {
+      return null
+    }
+
+    const totalDeposit = filteredEntries.reduce((sum, e) => sum + (e.deposit || 0), 0)
+    const currentValue = stats.latest
+    const profitLoss = currentValue - totalDeposit
+    const profitLossPercentage = totalDeposit > 0 ? (profitLoss / totalDeposit) * 100 : 0
+
+    return {
+      totalDeposit,
+      currentValue,
+      profitLoss,
+      profitLossPercentage
+    }
+  }, [filteredEntries, category.type, stats.latest])
+
   // Berechne Trend (letzten 50% vs. erste 50%)
   const trend = useMemo(() => {
     const halfPoint = Math.floor(filteredEntries.length / 2)
@@ -89,6 +108,9 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
     // Erkenne große Sprünge (mehr als 10x Unterschied)
     const hasLargeJumps = max > min * 10 && min > 0
     
+    // Für Sparen-Kategorien: berechne kumulative Einzahlungen
+    let cumulativeDeposit = 0
+    
     return filteredEntries.map(entry => {
       let displayValue = entry.value
       
@@ -104,6 +126,11 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
         }
       }
       
+      // Kumulative Einzahlung berechnen
+      if (category.type === 'sparen' && entry.deposit !== undefined && entry.deposit !== null) {
+        cumulativeDeposit += entry.deposit
+      }
+      
       return {
         date: new Date(entry.date).toLocaleDateString('de-DE', { 
           day: '2-digit', 
@@ -112,15 +139,54 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
         }),
         value: entry.value,
         displayValue: displayValue,
+        deposit: entry.deposit || 0,
+        cumulativeDeposit: cumulativeDeposit,
+        profitLoss: entry.value - cumulativeDeposit,
         comment: entry.comment
       }
     })
-  }, [filteredEntries])
+  }, [filteredEntries, category.type])
   
   // Custom Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload
+      
+      // Für Sparen-Kategorien: erweiterte Informationen
+      if (category.type === 'sparen') {
+        return (
+          <div className="bg-white p-4 rounded-lg shadow-lg border border-neutral-200">
+            <p className="text-sm font-semibold text-neutral-900 mb-3">{data.date}</p>
+            <div className="space-y-2">
+              <div className="flex justify-between gap-4">
+                <span className="text-xs text-neutral-600">Aktueller Wert:</span>
+                <span className="text-sm font-bold text-blue-600">
+                  {data.value.toLocaleString('de-DE')} {category.unit}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-xs text-neutral-600">Gesamte Einzahlung:</span>
+                <span className="text-sm font-semibold text-amber-600">
+                  {data.cumulativeDeposit.toLocaleString('de-DE')} {category.unit}
+                </span>
+              </div>
+              <div className="border-t border-neutral-200 pt-2 flex justify-between gap-4">
+                <span className="text-xs text-neutral-600">Gewinn / Verlust:</span>
+                <span className={`text-sm font-bold ${data.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {data.profitLoss >= 0 ? '+' : ''}{data.profitLoss.toLocaleString('de-DE')} {category.unit}
+                </span>
+              </div>
+            </div>
+            {data.comment && (
+              <p className="text-xs text-neutral-600 mt-3 pt-3 border-t border-neutral-200 max-w-xs">
+                {data.comment}
+              </p>
+            )}
+          </div>
+        )
+      }
+      
+      // Für normale Kategorien: einfache Anzeige
       return (
         <div className="bg-white p-4 rounded-lg shadow-lg border border-neutral-200">
           <p className="text-sm font-semibold text-neutral-900 mb-2">{data.date}</p>
@@ -223,33 +289,69 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
         <>
           {/* Statistik-Karten */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="p-6">
-              <div className="text-sm text-neutral-600 mb-1">Aktueller Wert</div>
-              <div className="text-2xl font-semibold text-neutral-900">
-                {stats.latest.toLocaleString('de-DE')} {category.unit}
-              </div>
-            </Card>
-            
-            <Card className="p-6">
-              <div className="text-sm text-neutral-600 mb-1">Durchschnitt</div>
-              <div className="text-2xl font-semibold text-neutral-900">
-                {stats.average.toLocaleString('de-DE', { maximumFractionDigits: 2 })} {category.unit}
-              </div>
-            </Card>
-            
-            <Card className="p-6">
-              <div className="text-sm text-neutral-600 mb-1">Minimum</div>
-              <div className="text-2xl font-semibold text-neutral-900">
-                {stats.min.toLocaleString('de-DE')} {category.unit}
-              </div>
-            </Card>
-            
-            <Card className="p-6">
-              <div className="text-sm text-neutral-600 mb-1">Maximum</div>
-              <div className="text-2xl font-semibold text-neutral-900">
-                {stats.max.toLocaleString('de-DE')} {category.unit}
-              </div>
-            </Card>
+            {category.type === 'sparen' && sparenStats ? (
+              // Sparen-spezifische Statistiken
+              <>
+                <Card className="p-6">
+                  <div className="text-sm text-neutral-600 mb-1">Gesamt Einzahlung</div>
+                  <div className="text-2xl font-semibold text-neutral-900">
+                    {sparenStats.totalDeposit.toLocaleString('de-DE')} {category.unit}
+                  </div>
+                </Card>
+                
+                <Card className="p-6">
+                  <div className="text-sm text-neutral-600 mb-1">Aktueller Wert</div>
+                  <div className="text-2xl font-semibold text-blue-700">
+                    {sparenStats.currentValue.toLocaleString('de-DE')} {category.unit}
+                  </div>
+                </Card>
+                
+                <Card className="p-6">
+                  <div className="text-sm text-neutral-600 mb-1">Gewinn / Verlust</div>
+                  <div className={`text-2xl font-semibold ${sparenStats.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {sparenStats.profitLoss >= 0 ? '+' : ''}{sparenStats.profitLoss.toLocaleString('de-DE')} {category.unit}
+                  </div>
+                </Card>
+                
+                <Card className="p-6">
+                  <div className="text-sm text-neutral-600 mb-1">Rendite</div>
+                  <div className={`text-2xl font-semibold ${sparenStats.profitLossPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {sparenStats.profitLossPercentage >= 0 ? '+' : ''}{sparenStats.profitLossPercentage.toFixed(2)}%
+                  </div>
+                </Card>
+              </>
+            ) : (
+              // Normale Statistiken
+              <>
+                <Card className="p-6">
+                  <div className="text-sm text-neutral-600 mb-1">Aktueller Wert</div>
+                  <div className="text-2xl font-semibold text-neutral-900">
+                    {stats.latest.toLocaleString('de-DE')} {category.unit}
+                  </div>
+                </Card>
+                
+                <Card className="p-6">
+                  <div className="text-sm text-neutral-600 mb-1">Durchschnitt</div>
+                  <div className="text-2xl font-semibold text-neutral-900">
+                    {stats.average.toLocaleString('de-DE', { maximumFractionDigits: 2 })} {category.unit}
+                  </div>
+                </Card>
+                
+                <Card className="p-6">
+                  <div className="text-sm text-neutral-600 mb-1">Minimum</div>
+                  <div className="text-2xl font-semibold text-neutral-900">
+                    {stats.min.toLocaleString('de-DE')} {category.unit}
+                  </div>
+                </Card>
+                
+                <Card className="p-6">
+                  <div className="text-sm text-neutral-600 mb-1">Maximum</div>
+                  <div className="text-2xl font-semibold text-neutral-900">
+                    {stats.max.toLocaleString('de-DE')} {category.unit}
+                  </div>
+                </Card>
+              </>
+            )}
           </div>
 
           {/* Trend-Karte */}
@@ -269,7 +371,9 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
 
           {/* Linien-Chart */}
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-6">Verlaufs-Diagramm</h3>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-6">
+              {category.type === 'sparen' ? 'Wertentwicklung & Einzahlungen' : 'Verlaufs-Diagramm'}
+            </h3>
             <div className="w-full" style={{ height: '400px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart 
@@ -291,28 +395,58 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
                     tickFormatter={(value) => value.toLocaleString('de-DE')}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <ReferenceLine 
-                    y={stats.average} 
-                    stroke="#9ca3af" 
-                    strokeDasharray="5 5"
-                    label={{ 
-                      value: 'Durchschnitt', 
-                      position: 'insideTopRight',
-                      fill: '#6b7280',
-                      fontSize: 12
-                    }}
-                  />
+                  {category.type !== 'sparen' && (
+                    <ReferenceLine 
+                      y={stats.average} 
+                      stroke="#9ca3af" 
+                      strokeDasharray="5 5"
+                      label={{ 
+                        value: 'Durchschnitt', 
+                        position: 'insideTopRight',
+                        fill: '#6b7280',
+                        fontSize: 12
+                      }}
+                    />
+                  )}
+                  {/* Hauptlinie: Aktueller Wert */}
                   <Line 
                     type="monotone" 
-                    dataKey="displayValue" 
+                    dataKey={category.type === 'sparen' ? 'value' : 'displayValue'}
                     stroke="#3b82f6" 
                     strokeWidth={2}
                     dot={{ fill: '#3b82f6', r: 4 }}
                     activeDot={{ r: 6, fill: '#2563eb' }}
+                    name="Aktueller Wert"
                   />
+                  {/* Für Sparen-Kategorien: Zusätzliche Linie für kumulative Einzahlung */}
+                  {category.type === 'sparen' && (
+                    <Line 
+                      type="monotone" 
+                      dataKey="cumulativeDeposit" 
+                      stroke="#f59e0b" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={{ fill: '#f59e0b', r: 3 }}
+                      activeDot={{ r: 5, fill: '#d97706' }}
+                      name="Gesamte Einzahlung"
+                    />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            {/* Legende für Sparen-Kategorien */}
+            {category.type === 'sparen' && (
+              <div className="mt-4 flex justify-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-0.5 bg-blue-600"></div>
+                  <span className="text-sm text-neutral-700">Aktueller Wert</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-0.5 bg-amber-600 border-t-2 border-dashed border-amber-600"></div>
+                  <span className="text-sm text-neutral-700">Gesamte Einzahlung</span>
+                </div>
+              </div>
+            )}
             {chartData.length > 0 && stats.max > stats.min * 10 && stats.min > 0 && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                 <p className="text-xs text-blue-800">
@@ -335,9 +469,21 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
                     {entry.comment && (
                       <div className="text-xs text-neutral-500 mt-1">{entry.comment}</div>
                     )}
+                    {category.type === 'sparen' && entry.deposit !== undefined && entry.deposit !== null && (
+                      <div className="text-xs text-neutral-600 mt-1">
+                        Einzahlung: {entry.deposit.toLocaleString('de-DE')} {category.unit}
+                      </div>
+                    )}
                   </div>
-                  <div className="text-sm font-semibold text-neutral-900">
-                    {entry.value.toLocaleString('de-DE')} {category.unit}
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-neutral-900">
+                      {entry.value.toLocaleString('de-DE')} {category.unit}
+                    </div>
+                    {category.type === 'sparen' && entry.deposit !== undefined && entry.deposit !== null && (
+                      <div className={`text-xs font-medium mt-1 ${entry.value - entry.deposit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {entry.value - entry.deposit >= 0 ? '+' : ''}{(entry.value - entry.deposit).toLocaleString('de-DE')} {category.unit}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

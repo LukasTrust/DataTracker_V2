@@ -1,11 +1,15 @@
 import { NavLink } from 'react-router-dom'
 import { 
   LayoutDashboard, 
-  FolderPlus, 
   HelpCircle,
-  BarChart3
+  BarChart3,
+  PiggyBank,
+  TrendingUp
 } from 'lucide-react'
 import clsx from 'clsx'
+import { useEffect, useState } from 'react'
+import { fetchCategories } from '../api/api'
+import { Category } from '../types/category'
 
 interface NavItem {
   to: string
@@ -15,11 +19,34 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/categories', icon: FolderPlus, label: 'Kategorien' },
   { to: '/help', icon: HelpCircle, label: 'Hilfe & Support' },
 ]
 
 function Sidebar() {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await fetchCategories()
+        setCategories(data)
+      } catch (error) {
+        console.error('Fehler beim Laden der Kategorien:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadCategories()
+  }, [])
+
+  const getCategoryIcon = (type: string) => {
+    if (type === 'sparen') {
+      return PiggyBank
+    }
+    return TrendingUp
+  }
+
   return (
     <aside className="w-64 bg-white border-r border-neutral-200 flex flex-col">
       {/* Logo/Brand */}
@@ -33,7 +60,7 @@ function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4">
+      <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <ul className="space-y-1">
           {navItems.map((item) => (
             <li key={item.to}>
@@ -65,6 +92,54 @@ function Sidebar() {
             </li>
           ))}
         </ul>
+
+        {/* Categories Section */}
+        <div className="mt-6">
+          <div className="px-3 mb-2">
+            <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+              Kategorien
+            </h3>
+          </div>
+          {loading ? (
+            <div className="px-3 py-2 text-sm text-neutral-500">Lädt...</div>
+          ) : categories.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-neutral-500">Keine Kategorien</div>
+          ) : (
+            <ul className="space-y-1">
+              {categories.map((category) => {
+                const Icon = getCategoryIcon(category.type)
+                return (
+                  <li key={category.id}>
+                    <NavLink
+                      to={`/categories/${category.id}`}
+                      className={({ isActive }) =>
+                        clsx(
+                          'flex items-center gap-3 px-3 py-2 rounded-lg transition-default',
+                          'text-sm font-medium',
+                          isActive
+                            ? 'bg-primary-50 text-primary-700'
+                            : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                        )
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon 
+                            className={clsx(
+                              'w-4 h-4 transition-default flex-shrink-0',
+                              isActive ? 'text-primary-600' : 'text-neutral-400'
+                            )} 
+                          />
+                          <span className="truncate">{category.name}</span>
+                        </>
+                      )}
+                    </NavLink>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
       </nav>
 
       {/* Footer */}
