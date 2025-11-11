@@ -108,6 +108,26 @@ def on_shutdown() -> None:
 
 
 # ============================================================================
+# Health Check Endpoint
+# ============================================================================
+
+
+@app.get("/health")
+def health_check() -> dict:
+    """
+    Health check endpoint for monitoring and load balancers.
+    
+    Returns:
+        dict: Health status information
+    """
+    return {
+        "status": "healthy",
+        "service": "datatracker-backend",
+        "version": "2.0.0"
+    }
+
+
+# ============================================================================
 # Category Endpoints
 # ============================================================================
 

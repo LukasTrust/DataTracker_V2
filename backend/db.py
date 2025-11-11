@@ -14,9 +14,23 @@ from .logger import get_logger
 
 logger = get_logger("db")
 
-# Database file path
-DB_FILE = os.path.join(os.path.dirname(__file__), "..", "data.db")
-DATABASE_URL = f"sqlite:///{DB_FILE}"
+# Database file path - can be configured via environment variable
+# Default: data.db in parent directory (for local development)
+# Docker: /app/data/data.db (via DATABASE_URL env var)
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'data.db')}"
+)
+
+# Ensure data directory exists for file-based SQLite
+if DATABASE_URL.startswith("sqlite:///"):
+    db_file_path = DATABASE_URL.replace("sqlite:///", "")
+    db_dir = os.path.dirname(db_file_path)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+        logger.info(f"Ensured database directory exists: {db_dir}")
+
+logger.info(f"Using database: {DATABASE_URL}")
 
 # Create engine with connection pooling configuration
 engine = create_engine(

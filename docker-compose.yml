@@ -1,0 +1,83 @@
+# =============================================================================
+# DataTracker V2 - Docker Compose Configuration
+# =============================================================================
+# Dieses Docker-Compose-Setup orchestriert drei Services:
+# 1. Frontend (React + Vite + Tailwind)
+# 2. Backend (FastAPI + Python)
+# 3. Database (SQLite mit persistentem Volume)
+#
+# Sicherheitskonzept:
+# - SQLite ist NUR vom Backend erreichbar (kein expose nach außen)
+# - Backend ist NUR vom Frontend erreichbar (internes Netzwerk)
+# - Frontend ist der einzige Service, der nach außen exponiert wird
+# =============================================================================
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: datatracker_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://backend:8000
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: datatracker_backend
+    expose:
+      - "8000"
+    environment:
+      - DATABASE_URL=sqlite:////app/data/data.db
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    volumes:
+      - sqlite_data:/app/data:rw
+    depends_on:
+      - db
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: alpine:latest
+    container_name: datatracker_db
+    command: tail -f /dev/null
+    volumes:
+      - sqlite_data:/data:rw
+    networks:
+      - app_network
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge
+    internal: false
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

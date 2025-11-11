@@ -5,11 +5,11 @@ This module handles SQL migration files execution in order,
 tracking which migrations have been applied to avoid duplicate runs.
 """
 
+import os
 import sqlite3
 from pathlib import Path
 from typing import List
 
-from .db import DB_FILE
 from .constants import MIGRATIONS_TABLE_NAME
 from .logger import get_logger
 
@@ -17,6 +17,23 @@ from .logger import get_logger
 logger = get_logger("migrate")
 
 MIGRATIONS_DIR = Path(__file__).parent / "migrations"
+
+
+def get_db_file() -> str:
+    """
+    Get database file path from environment or default.
+    
+    Returns:
+        Database file path
+    """
+    database_url = os.getenv(
+        "DATABASE_URL",
+        f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'data.db')}"
+    )
+    # Extract file path from sqlite:/// URL
+    if database_url.startswith("sqlite:///"):
+        return database_url.replace("sqlite:///", "")
+    return database_url
 
 
 def get_migration_files() -> List[Path]:
@@ -121,7 +138,14 @@ def run_migrations() -> None:
     logger.info("Starting migration process")
     
     try:
-        db_path = DB_FILE
+        db_path = get_db_file()
+        logger.info(f"Using database: {db_path}")
+        
+        # Ensure database directory exists
+        db_dir = os.path.dirname(db_path)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
+        
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
