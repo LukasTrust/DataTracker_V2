@@ -67,6 +67,15 @@ export const fetchDashboardStats = async () => {
   return response.data
 }
 
+export const fetchDashboardTimeseries = async (params?: {
+  start_date?: string
+  end_date?: string
+  category_type?: string
+}) => {
+  const response = await api.get('/dashboard/timeseries', { params })
+  return response.data
+}
+
 // Export
 export const exportData = async () => {
   const response = await api.get('/export', {

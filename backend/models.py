@@ -7,8 +7,9 @@ class Category(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
+    icon: Optional[str] = None
     type: str = "normal"   # "normal" or "sparen"
-    unit: Optional[str] = None
+    unit: str
     auto_create: bool = False
     entries: List["Entry"] = Relationship(back_populates="category")
 

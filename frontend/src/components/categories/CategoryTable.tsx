@@ -145,7 +145,7 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
     
     if (category.type === 'sparen') {
       // Letzter Wert, der nicht 0 ist
-      const sortedByDate = [...entries].sort((a, b) => 
+      const sortedByDate = [...entryList].sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       )
       for (let i = 0; i < sortedByDate.length; i++) {

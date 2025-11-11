@@ -28,7 +28,7 @@ function CategoryEditForm({ formData, onFormChange, onSave, onDelete, onDuplicat
         <div className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Kategorie-Name
+              Kategorie-Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -36,6 +36,7 @@ function CategoryEditForm({ formData, onFormChange, onSave, onDelete, onDuplicat
               onChange={(e) => handleChange('name', e.target.value)}
               className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors"
               placeholder="z.B. Gewicht, Umsatz, Ersparnisse"
+              required
             />
           </div>
 
@@ -67,7 +68,7 @@ function CategoryEditForm({ formData, onFormChange, onSave, onDelete, onDuplicat
               className={`w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors ${
                 formData.type === 'sparen' ? 'bg-neutral-100 cursor-not-allowed text-neutral-500' : ''
               }`}
-              placeholder="z.B. kg, €, Stunden"
+              placeholder="z.B. kg, €, Stunden, %"
               required
             />
             {formData.type === 'sparen' && (

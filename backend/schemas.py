@@ -6,12 +6,14 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}$")  # YYYY-MM
 
 class CategoryCreate(BaseModel):
     name: str
+    icon: Optional[str] = None
     type: Optional[str] = "normal"
-    unit: Optional[str] = None
+    unit: str
     auto_create: Optional[bool] = False
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
+    icon: Optional[str] = None
     type: Optional[str] = None
     unit: Optional[str] = None
     auto_create: Optional[bool] = None

@@ -9,21 +9,21 @@ import CategoryTable from '../components/categories/CategoryTable'
 import CategoryGraphs from '../components/categories/CategoryGraphs'
 import CategoryEditForm from '../components/categories/CategoryEditForm'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { fetchCategories, deleteCategory, fetchEntries, updateCategory, duplicateCategory } from '../api/api'
+import { deleteCategory, fetchEntries, updateCategory, duplicateCategory } from '../api/api'
 import { Category, Entry, TabType, CategoryFormData } from '../types/category'
 import { useNotification } from '../contexts/NotificationContext'
+import { useCategories } from '../contexts/CategoryContext'
 
 function Categories() {
   const navigate = useNavigate()
   const { id: categoryIdParam } = useParams<{ id: string }>()
   const { showSuccess, showError } = useNotification()
+  const { categories, loading, updateCategoryInList, removeCategoryFromList, addCategory } = useCategories()
   
   // State Management
-  const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('data')
-  const [loading, setLoading] = useState(true)
   const [loadingEntries, setLoadingEntries] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; categoryId: number | null }>({ 
     isOpen: false, 
@@ -38,10 +38,6 @@ function Categories() {
 
   // Effects
   useEffect(() => {
-    loadCategories()
-  }, [])
-
-  useEffect(() => {
     if (categoryIdParam && categories.length > 0) {
       const category = categories.find(c => c.id === parseInt(categoryIdParam))
       if (category) {
@@ -51,24 +47,12 @@ function Categories() {
   }, [categoryIdParam, categories])
 
   // Data Loading Functions
-  const loadCategories = async () => {
-    try {
-      setLoading(true)
-      const data = await fetchCategories()
-      setCategories(data)
-    } catch (error) {
-      console.error('Fehler beim Laden der Kategorien:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const selectCategory = async (category: Category) => {
     setSelectedCategory(category)
     setEditForm({
       name: category.name,
       type: category.type,
-      unit: category.unit || '',
+      unit: category.unit,
       auto_create: category.auto_create
     })
     
@@ -100,7 +84,7 @@ function Categories() {
 
     try {
       await deleteCategory(categoryId)
-      setCategories(categories.filter(cat => cat.id !== categoryId))
+      removeCategoryFromList(categoryId)
       if (selectedCategory?.id === categoryId) {
         setSelectedCategory(null)
         setEntries([])
@@ -119,7 +103,7 @@ function Categories() {
 
     try {
       const updated = await updateCategory(selectedCategory.id, editForm)
-      setCategories(categories.map(cat => cat.id === updated.id ? updated : cat))
+      updateCategoryInList(updated)
       setSelectedCategory(updated)
       showSuccess('Die Änderungen wurden erfolgreich gespeichert.')
     } catch (error) {
@@ -138,7 +122,7 @@ function Categories() {
     
     try {
       await deleteCategory(selectedCategory.id)
-      setCategories(categories.filter(cat => cat.id !== selectedCategory.id))
+      removeCategoryFromList(selectedCategory.id)
       showSuccess('Die Kategorie wurde erfolgreich gelöscht.')
       handleBackToList()
     } catch (error) {
@@ -154,7 +138,7 @@ function Categories() {
     
     try {
       const duplicated = await duplicateCategory(selectedCategory.id)
-      setCategories([...categories, duplicated])
+      addCategory(duplicated)
       await selectCategory(duplicated)
       showSuccess('Die Kategorie wurde erfolgreich dupliziert.')
     } catch (error) {

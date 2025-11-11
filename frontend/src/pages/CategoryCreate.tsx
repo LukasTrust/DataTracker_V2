@@ -6,10 +6,12 @@ import Card from '../components/Card'
 import Button from '../components/Button'
 import { createCategory } from '../api/api'
 import { useNotification } from '../contexts/NotificationContext'
+import { useCategories } from '../contexts/CategoryContext'
 
 function CategoryCreate() {
   const navigate = useNavigate()
   const { showSuccess, showError } = useNotification()
+  const { addCategory } = useCategories()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -26,14 +28,20 @@ function CategoryCreate() {
       return
     }
 
+    if (!formData.unit.trim()) {
+      showError('Bitte gib eine Einheit ein')
+      return
+    }
+
     try {
       setLoading(true)
-      await createCategory({
+      const newCategory = await createCategory({
         name: formData.name.trim(),
         type: formData.type,
-        unit: formData.unit.trim() || undefined,
+        unit: formData.unit.trim(),
         auto_create: formData.auto_create,
       })
+      addCategory(newCategory)
       showSuccess('Kategorie erfolgreich erstellt!')
       navigate('/categories')
     } catch (error) {
@@ -148,8 +156,7 @@ function CategoryCreate() {
               {/* Unit */}
               <div className="mb-6">
                 <label htmlFor="unit" className="block text-sm font-medium text-neutral-700 mb-2">
-                  Einheit {formData.type === 'normal' && '(optional)'}
-                  {formData.type === 'sparen' && <span className="text-red-500">*</span>}
+                  Einheit <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -159,13 +166,14 @@ function CategoryCreate() {
                   className={`w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-default ${
                     formData.type === 'sparen' ? 'bg-neutral-100' : ''
                   }`}
-                  placeholder={formData.type === 'sparen' ? '€' : 'z.B. %, Stück, kg, h'}
+                  placeholder={formData.type === 'sparen' ? '€' : 'z.B. €, %, Stück, kg, h'}
                   disabled={formData.type === 'sparen'}
+                  required
                 />
                 <p className="text-xs text-neutral-500 mt-1">
                   {formData.type === 'sparen' 
                     ? 'Finanzkategorien verwenden automatisch € als Einheit'
-                    : 'Die Einheit für die Werte in dieser Kategorie (z.B. %, Stück, kg, h)'}
+                    : 'Die Einheit für die Werte in dieser Kategorie (z.B. €, %, Stück, kg, h)'}
                 </p>
               </div>
 
@@ -228,7 +236,7 @@ function CategoryCreate() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary-600 mt-0.5">•</span>
-                <span>Die Einheit hilft bei der Darstellung der Werte (z.B. EUR, kg, Stunden)</span>
+                <span>Die Einheit ist ein Pflichtfeld und wird bei allen Werten angezeigt (z.B. €, kg, Stunden)</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary-600 mt-0.5">•</span>

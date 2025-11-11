@@ -1,62 +1,148 @@
 import { useState, useEffect } from 'react'
-import { FolderOpen, TrendingUp, Plus, List } from 'lucide-react'
+import { 
+  FolderOpen, 
+  TrendingUp, 
+  Plus, 
+  Wallet,
+  DollarSign,
+  Activity 
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import Card from '../components/Card'
 import Button from '../components/Button'
-import { fetchDashboardStats } from '../api/api'
-
-interface CategorySum {
-  id: number
-  name: string
-  type: string
-  unit?: string
-  totalValue: number
-  totalDeposits: number
-  entryCount: number
-}
+import KPICard from '../components/KPICard'
+import CategoryCard, { CategoryCardData } from '../components/CategoryCard'
+import DashboardFilterBar, { DashboardFilters } from '../components/DashboardFilterBar'
+import DashboardCharts from '../components/DashboardCharts'
+import { fetchDashboardStats, fetchDashboardTimeseries, exportData } from '../api/api'
+import { useNotification } from '../contexts/NotificationContext'
 
 interface DashboardStats {
   totalCategories: number
-  categorySums: CategorySum[]
+  categorySums: CategoryCardData[]
+}
+
+interface TimeseriesData {
+  totalValueData: { date: string; value: number }[]
+  sparenData: { date: string; value: number; deposits: number; profit: number }[]
+  categoryComparison: { name: string; value: number; type: string }[]
 }
 
 function Dashboard() {
   const navigate = useNavigate()
+  const { showError, showSuccess, showInfo } = useNotification()
   const [stats, setStats] = useState<DashboardStats>({
     totalCategories: 0,
     categorySums: [],
   })
+  const [timeseriesData, setTimeseriesData] = useState<TimeseriesData>({
+    totalValueData: [],
+    sparenData: [],
+    categoryComparison: [],
+  })
   const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState<DashboardFilters>({
+    categoryType: 'all',
+  })
+  const [activeKPI, setActiveKPI] = useState<string | null>(null)
 
   useEffect(() => {
     loadDashboardData()
-  }, [])
+  }, [filters])
 
   const loadDashboardData = async () => {
     try {
       setLoading(true)
-      const data = await fetchDashboardStats()
-      setStats(data)
+      
+      // Fetch main stats
+      const statsData = await fetchDashboardStats()
+      
+      // Apply category type filter
+      let filteredSums = statsData.categorySums
+      if (filters.categoryType && filters.categoryType !== 'all') {
+        filteredSums = filteredSums.filter((cat: CategoryCardData) => 
+          cat.type === filters.categoryType
+        )
+      }
+      
+      setStats({
+        totalCategories: statsData.totalCategories,
+        categorySums: filteredSums,
+      })
+      
+      // Fetch timeseries data
+      const timeseriesParams = {
+        start_date: filters.startDate,
+        end_date: filters.endDate,
+        category_type: filters.categoryType,
+      }
+      const timeseries = await fetchDashboardTimeseries(timeseriesParams)
+      setTimeseriesData(timeseries)
+      
     } catch (error) {
       console.error('Fehler beim Laden der Dashboard-Daten:', error)
+      showError('Fehler beim Laden der Dashboard-Daten')
     } finally {
       setLoading(false)
     }
   }
 
-  const formatValue = (value: number, unit?: string) => {
-    if (unit) {
-      return `${value.toLocaleString('de-DE', { minimumFractionDigits: 2 })} ${unit}`
+  const handleExport = async () => {
+    try {
+      showInfo('Export wird vorbereitet...')
+      const blob = await exportData()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'datatracker_export.xlsx'
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      showSuccess('Daten erfolgreich exportiert')
+    } catch (error) {
+      console.error('Export-Fehler:', error)
+      showError('Fehler beim Exportieren')
     }
-    return value.toLocaleString('de-DE', { minimumFractionDigits: 2 })
   }
+
+  const handleFilterReset = () => {
+    setFilters({ categoryType: 'all' })
+    setActiveKPI(null)
+  }
+
+  const handleKPIClick = (kpiType: string) => {
+    if (activeKPI === kpiType) {
+      setActiveKPI(null)
+      setFilters({ ...filters, categoryType: 'all' })
+    } else {
+      setActiveKPI(kpiType)
+      if (kpiType === 'sparen') {
+        setFilters({ ...filters, categoryType: 'sparen' })
+      } else if (kpiType === 'normal') {
+        setFilters({ ...filters, categoryType: 'normal' })
+      } else {
+        setFilters({ ...filters, categoryType: 'all' })
+      }
+    }
+  }
+
+  // Calculate KPIs
+  const totalEntries = stats.categorySums.reduce((sum, cat) => sum + cat.entryCount, 0)
+  // Only include categories with € unit in total value
+  const totalValue = stats.categorySums
+    .filter(cat => cat.unit === '€')
+    .reduce((sum, cat) => sum + cat.totalValue, 0)
+  const sparenCategories = stats.categorySums.filter(cat => cat.type === 'sparen')
+  const totalProfit = sparenCategories.reduce((sum, cat) => sum + (cat.profit || 0), 0)
+  const totalDeposits = sparenCategories.reduce((sum, cat) => sum + cat.totalDeposits, 0)
 
   if (loading) {
     return (
       <>
         <PageHeader 
-          title="Deine persönliche Übersicht"
+          title="Dashboard"
           description="Behalte deine Daten im Blick"
         />
         <div className="p-8">
@@ -75,8 +161,8 @@ function Dashboard() {
   return (
     <>
       <PageHeader 
-        title="Deine persönliche Übersicht"
-        description="Behalte deine Daten im Blick"
+        title="Dashboard"
+        description="Deine persönliche Finanz- und Datenübersicht"
         actions={
           <>
             <Button variant="secondary" onClick={loadDashboardData}>
@@ -90,98 +176,115 @@ function Dashboard() {
       />
 
       <div className="p-8">
-        {/* Overview Card */}
-        <Card className="p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-neutral-900 mb-1">
-                Kategorien-Übersicht
-              </h2>
-              <p className="text-sm text-neutral-600">
-                {stats.totalCategories} {stats.totalCategories === 1 ? 'Kategorie' : 'Kategorien'} mit insgesamt{' '}
-                {stats.categorySums.reduce((sum, cat) => sum + cat.entryCount, 0)} Einträgen
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center">
-                <FolderOpen className="w-6 h-6 text-primary-600" />
-              </div>
-            </div>
-          </div>
-        </Card>
+        {/* Filter Bar */}
+        <DashboardFilterBar
+          filters={filters}
+          onFiltersChange={setFilters}
+          onExport={handleExport}
+          onReset={handleFilterReset}
+        />
 
-        {/* Category Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {stats.categorySums.map((category) => (
-            <Card key={category.id} className="p-6" hover>
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-semibold text-neutral-900">{category.name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      category.type === 'sparen' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {category.type === 'sparen' ? 'Sparen' : 'Normal'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-500">{category.entryCount} Einträge</p>
-                </div>
-                <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="w-5 h-5 text-primary-600" />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-medium text-neutral-600 mb-1">Gesamtwert</p>
-                  <p className="text-2xl font-semibold text-neutral-900">
-                    {formatValue(category.totalValue, category.unit)}
-                  </p>
-                </div>
-
-                {category.type === 'sparen' && category.totalDeposits > 0 && (
-                  <div className="pt-3 border-t border-neutral-200">
-                    <p className="text-xs font-medium text-neutral-600 mb-1">Einzahlungen</p>
-                    <p className="text-lg font-semibold text-green-600">
-                      {formatValue(category.totalDeposits, category.unit)}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-neutral-200">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full"
-                  icon={<List className="w-4 h-4" />}
-                  onClick={() => navigate(`/categories/${category.id}`)}
-                >
-                  Details anzeigen
-                </Button>
-              </div>
-            </Card>
-          ))}
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <KPICard
+            title="Kategorien"
+            value={stats.totalCategories}
+            icon={FolderOpen}
+            description={`${totalEntries} Einträge insgesamt`}
+            iconColor="text-blue-600"
+            iconBgColor="bg-blue-50"
+            onClick={() => handleKPIClick('all')}
+            isActive={activeKPI === 'all'}
+          />
+          
+          <KPICard
+            title="Gesamtwert"
+            value={`${totalValue.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`}
+            icon={Activity}
+            description="Alle Kategorien"
+            iconColor="text-purple-600"
+            iconBgColor="bg-purple-50"
+          />
+          
+          <KPICard
+            title="Sparen-Kategorien"
+            value={sparenCategories.length}
+            icon={Wallet}
+            description={`${totalDeposits.toLocaleString('de-DE', { minimumFractionDigits: 2 })} € Einzahlungen`}
+            iconColor="text-green-600"
+            iconBgColor="bg-green-50"
+            onClick={() => handleKPIClick('sparen')}
+            isActive={activeKPI === 'sparen'}
+          />
+          
+          <KPICard
+            title="Gewinn/Verlust"
+            value={`${totalProfit >= 0 ? '+' : ''}${totalProfit.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €`}
+            icon={totalProfit >= 0 ? TrendingUp : DollarSign}
+            description="Sparen-Kategorien"
+            iconColor={totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}
+            iconBgColor={totalProfit >= 0 ? 'bg-green-50' : 'bg-red-50'}
+            trend={totalDeposits > 0 ? {
+              value: (totalProfit / totalDeposits) * 100,
+              isPositive: totalProfit >= 0,
+              label: 'Rendite'
+            } : undefined}
+          />
         </div>
 
-        {/* Quick Actions */}
-        {stats.categorySums.length === 0 && (
+        {/* Charts */}
+        {(timeseriesData.totalValueData.length > 0 || timeseriesData.categoryComparison.length > 0) && (
+          <DashboardCharts
+            totalValueData={timeseriesData.totalValueData}
+            sparenData={timeseriesData.sparenData}
+            categoryComparison={timeseriesData.categoryComparison}
+          />
+        )}
+
+        {/* Category Cards */}
+        {stats.categorySums.length > 0 ? (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-neutral-900">
+                Deine Kategorien
+              </h2>
+              <p className="text-sm text-neutral-600">
+                {stats.categorySums.length} {stats.categorySums.length === 1 ? 'Kategorie' : 'Kategorien'}
+                {filters.categoryType !== 'all' && ` (gefiltert nach ${filters.categoryType === 'sparen' ? 'Sparen' : 'Normal'})`}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {stats.categorySums.map((category) => (
+                <CategoryCard
+                  key={category.id}
+                  category={category}
+                  onClick={() => navigate(`/categories/${category.id}`)}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
           <Card className="p-12 text-center">
             <FolderOpen className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-              Noch keine Kategorien
+              {filters.categoryType !== 'all' 
+                ? `Keine ${filters.categoryType === 'sparen' ? 'Sparen' : 'Normal'}-Kategorien gefunden`
+                : 'Noch keine Kategorien'
+              }
             </h3>
             <p className="text-sm text-neutral-600 mb-6">
-              Erstelle deine erste Kategorie, um mit der Datenverwaltung zu beginnen.
+              {filters.categoryType !== 'all'
+                ? 'Versuche einen anderen Filter oder erstelle eine neue Kategorie.'
+                : 'Erstelle deine erste Kategorie, um mit der Datenverwaltung zu beginnen.'
+              }
             </p>
             <Button 
               variant="primary" 
               icon={<Plus className="w-4 h-4" />}
               onClick={() => navigate('/categories/new')}
             >
-              Erste Kategorie erstellen
+              Kategorie erstellen
             </Button>
           </Card>
         )}

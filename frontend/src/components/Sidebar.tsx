@@ -7,9 +7,7 @@ import {
   TrendingUp
 } from 'lucide-react'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
-import { fetchCategories } from '../api/api'
-import { Category } from '../types/category'
+import { useCategories } from '../contexts/CategoryContext'
 
 interface NavItem {
   to: string
@@ -23,22 +21,7 @@ const navItems: NavItem[] = [
 ]
 
 function Sidebar() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const data = await fetchCategories()
-        setCategories(data)
-      } catch (error) {
-        console.error('Fehler beim Laden der Kategorien:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadCategories()
-  }, [])
+  const { categories, loading } = useCategories()
 
   const getCategoryIcon = (type: string) => {
     if (type === 'sparen') {
@@ -146,7 +129,6 @@ function Sidebar() {
       <div className="px-6 py-4 border-t border-neutral-200">
         <div className="text-xs text-neutral-500">
           <p className="font-medium text-neutral-700 mb-1">DataTracker V2</p>
-          <p>© 2025 Alle Rechte vorbehalten</p>
         </div>
       </div>
     </aside>

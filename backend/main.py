@@ -233,8 +233,33 @@ def api_dashboard_stats():
     
     for cat in categories:
         entries = list_entries_for_category(cat.id)
-        total_value = sum(e.value for e in entries)
+        
+        # For "sparen" categories, use only the last value
+        # For other categories, sum all values
+        if cat.type == "sparen":
+            sorted_entries = sorted(entries, key=lambda x: x.date)
+            total_value = sorted_entries[-1].value if sorted_entries else 0
+        else:
+            total_value = sum(e.value for e in entries)
+        
         total_deposits = sum(e.deposit for e in entries if e.deposit is not None)
+        
+        # Calculate sparkline data (last 10 entries)
+        sparkline_data = []
+        sorted_entries = sorted(entries, key=lambda x: x.date)
+        last_entries = sorted_entries[-10:] if len(sorted_entries) > 10 else sorted_entries
+        for e in last_entries:
+            sparkline_data.append({
+                "date": e.date.isoformat() if hasattr(e.date, 'isoformat') else str(e.date),
+                "value": e.value
+            })
+        
+        # Calculate profit/loss for sparen categories
+        profit = None
+        profit_percentage = None
+        if cat.type == "sparen" and total_deposits > 0:
+            profit = total_value - total_deposits
+            profit_percentage = (profit / total_deposits) * 100 if total_deposits > 0 else 0
         
         stats["categorySums"].append({
             "id": cat.id,
@@ -243,10 +268,129 @@ def api_dashboard_stats():
             "unit": cat.unit,
             "totalValue": total_value,
             "totalDeposits": total_deposits,
-            "entryCount": len(entries)
+            "entryCount": len(entries),
+            "sparklineData": sparkline_data,
+            "profit": profit,
+            "profitPercentage": profit_percentage
         })
     
     return stats
+
+@app.get("/dashboard/timeseries")
+def api_dashboard_timeseries(
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    category_type: Optional[str] = Query(None, description="Filter by type: 'sparen' or 'normal'"),
+):
+    """
+    Return timeseries data for dashboard charts.
+    For sparen categories, use last value per category.
+    For normal categories, sum all values.
+    """
+    categories = list_categories()
+    
+    # Filter categories by type if specified
+    if category_type and category_type != "all":
+        categories = [c for c in categories if c.type == category_type]
+    
+    # Collect unique dates
+    all_dates = set()
+    category_entries = {}
+    
+    for cat in categories:
+        entries = list_entries_for_category(cat.id)
+        
+        # Apply date filter
+        if start_date:
+            entries = [e for e in entries if str(e.date) >= start_date]
+        if end_date:
+            entries = [e for e in entries if str(e.date) <= end_date]
+        
+        category_entries[cat.id] = {
+            'type': cat.type,
+            'unit': cat.unit,
+            'entries': sorted(entries, key=lambda x: x.date)
+        }
+        
+        for entry in entries:
+            date_str = entry.date.isoformat() if hasattr(entry.date, 'isoformat') else str(entry.date)
+            all_dates.add(date_str)
+    
+    # Build timeseries data
+    all_data = {}
+    sparen_data = {}
+    
+    for date_str in sorted(all_dates):
+        total_value = 0
+        sparen_value = 0
+        sparen_deposits = 0
+        
+        for cat_id, data in category_entries.items():
+            cat_type = data['type']
+            cat_unit = data['unit']
+            entries = data['entries']
+            
+            # Only include categories with € unit in total value
+            if cat_unit != '€':
+                continue
+            
+            if cat_type == 'sparen':
+                # For sparen: use the last value up to this date
+                last_entry = None
+                for entry in entries:
+                    entry_date = entry.date.isoformat() if hasattr(entry.date, 'isoformat') else str(entry.date)
+                    if entry_date <= date_str:
+                        last_entry = entry
+                
+                if last_entry:
+                    total_value += last_entry.value
+                    sparen_value += last_entry.value
+                    
+                # Sum deposits up to this date
+                for entry in entries:
+                    entry_date = entry.date.isoformat() if hasattr(entry.date, 'isoformat') else str(entry.date)
+                    if entry_date <= date_str and entry.deposit:
+                        sparen_deposits += entry.deposit
+            else:
+                # For normal: sum all values up to this date
+                for entry in entries:
+                    entry_date = entry.date.isoformat() if hasattr(entry.date, 'isoformat') else str(entry.date)
+                    if entry_date <= date_str:
+                        total_value += entry.value
+        
+        all_data[date_str] = {"date": date_str, "value": total_value}
+        
+        if sparen_value > 0 or sparen_deposits > 0:
+            sparen_data[date_str] = {
+                "date": date_str,
+                "value": sparen_value,
+                "deposits": sparen_deposits,
+                "profit": sparen_value - sparen_deposits
+            }
+    # Category comparison
+    category_comparison = []
+    for cat in categories:
+        entries = category_entries[cat.id]['entries']
+        cat_type = category_entries[cat.id]['type']
+        
+        if cat_type == 'sparen':
+            # For sparen: use only the last value
+            total_value = entries[-1].value if entries else 0
+        else:
+            # For normal: sum all values
+            total_value = sum(e.value for e in entries)
+        
+        category_comparison.append({
+            "name": cat.name,
+            "value": total_value,
+            "type": cat.type
+        })
+    
+    return {
+        "totalValueData": sorted(all_data.values(), key=lambda x: x["date"]),
+        "sparenData": sorted(sparen_data.values(), key=lambda x: x["date"]),
+        "categoryComparison": category_comparison
+    }
 
 @app.get("/export")
 def api_export_all():

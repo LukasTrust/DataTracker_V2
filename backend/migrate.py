@@ -1,6 +1,6 @@
 import sqlite3
 from pathlib import Path
-from .db import DB_FILE
+from db import DB_FILE
 
 MIGRATIONS_DIR = Path(__file__).parent / "migrations"
 MIGRATIONS_TABLE = "applied_migrations"
