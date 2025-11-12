@@ -37,3 +37,5 @@ __pycache__/
 venv/
 env/
 ENV/
+
+startV2.txt
