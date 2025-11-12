@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, DollarSign, Hash } from 'lucide-react'
+import { TrendingUp, TrendingDown, Calculator, DollarSign, Hash } from 'lucide-react'
 import { Entry, Category } from '../../../types/category'
 import { formatCurrency } from '../../../utils/numberFormatter'
 
@@ -85,7 +85,7 @@ function CategoryTableSummary({ entries, filteredEntries, category }: CategoryTa
         <div className="bg-white border border-neutral-200 rounded-lg p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <DollarSign className="w-5 h-5 text-blue-600" />
+              <Calculator className="w-5 h-5 text-blue-600" />
             </div>
             <div>
               <p className="text-sm text-neutral-600">Aktueller Wert</p>
