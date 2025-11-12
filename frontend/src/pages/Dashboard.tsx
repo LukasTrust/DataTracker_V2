@@ -26,7 +26,6 @@ function Dashboard() {
   const [filters, setFilters] = useState<DashboardFilters>({
     categoryType: 'all',
   })
-  const [activeKPI, setActiveKPI] = useState<string | null>(null)
 
   // Custom Hooks
   const { stats, timeseriesData, loading } = useDashboardStats(filters)
@@ -34,23 +33,6 @@ function Dashboard() {
 
   const handleFilterReset = () => {
     setFilters({ categoryType: 'all' })
-    setActiveKPI(null)
-  }
-
-  const handleKPIClick = (kpiType: string) => {
-    if (activeKPI === kpiType) {
-      setActiveKPI(null)
-      setFilters({ ...filters, categoryType: 'all' })
-    } else {
-      setActiveKPI(kpiType)
-      if (kpiType === 'sparen') {
-        setFilters({ ...filters, categoryType: 'sparen' })
-      } else if (kpiType === 'normal') {
-        setFilters({ ...filters, categoryType: 'normal' })
-      } else {
-        setFilters({ ...filters, categoryType: 'all' })
-      }
-    }
   }
 
   // Calculate KPIs - mit Null-Check
@@ -118,8 +100,15 @@ function Dashboard() {
             description={`${totalEntries} Einträge insgesamt`}
             iconColor="text-blue-600"
             iconBgColor="bg-blue-50"
-            onClick={() => handleKPIClick('all')}
-            isActive={activeKPI === 'all'}
+          />
+
+          <KPICard
+            title="Sparen-Kategorien"
+            value={sparenCategories.length}
+            icon={Wallet}
+            description={`${totalDeposits.toLocaleString('de-DE', { minimumFractionDigits: 2 })} € Einzahlungen`}
+            iconColor="text-green-600"
+            iconBgColor="bg-green-50"
           />
           
           <KPICard
@@ -129,17 +118,6 @@ function Dashboard() {
             description="Alle Kategorien"
             iconColor="text-purple-600"
             iconBgColor="bg-purple-50"
-          />
-          
-          <KPICard
-            title="Sparen-Kategorien"
-            value={sparenCategories.length}
-            icon={Wallet}
-            description={`${totalDeposits.toLocaleString('de-DE', { minimumFractionDigits: 2 })} € Einzahlungen`}
-            iconColor="text-green-600"
-            iconBgColor="bg-green-50"
-            onClick={() => handleKPIClick('sparen')}
-            isActive={activeKPI === 'sparen'}
           />
           
           <KPICard
