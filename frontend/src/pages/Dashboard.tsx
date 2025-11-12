@@ -5,7 +5,9 @@ import {
   Plus, 
   Wallet,
   DollarSign,
-  Activity 
+  Activity,
+  PiggyBank,
+  BarChart2
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
@@ -13,6 +15,7 @@ import Card from '../components/Card'
 import Button from '../components/Button'
 import KPICard from '../components/KPICard'
 import CategoryCard from '../components/CategoryCard'
+import SparenSummaryCard from '../components/SparenSummaryCard'
 import DashboardFilterBar, { DashboardFilters } from '../components/DashboardFilterBar'
 import DashboardCharts from '../components/DashboardCharts'
 import { useDashboardStats } from '../hooks/useDashboardStats'
@@ -176,15 +179,73 @@ function Dashboard() {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {stats.categorySums.map((category) => (
-                <CategoryCard
-                  key={category.id}
-                  category={category}
-                  onClick={() => navigate(`/categories/${category.id}`)}
-                />
-              ))}
-            </div>
+            {/* Sparen Categories Section */}
+            {sparenCategories.length > 0 && filters.categoryType !== 'normal' && (
+              <div className="mb-12">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center justify-center w-10 h-10 bg-green-600 rounded-xl shadow-lg">
+                    <PiggyBank className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-neutral-900">💰 Sparen-Kategorien</h3>
+                    <p className="text-sm text-neutral-600">
+                      {sparenCategories.length} {sparenCategories.length === 1 ? 'Kategorie' : 'Kategorien'} • Summe & Differenzen werden angezeigt
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Sparen Summary Card */}
+                <div className="mb-6">
+                  <SparenSummaryCard
+                    totalValue={sparenCategories.reduce((sum, cat) => sum + cat.totalValue, 0)}
+                    totalDeposits={totalDeposits}
+                    totalProfit={totalProfit}
+                    categoryCount={sparenCategories.length}
+                    averageReturn={totalDeposits > 0 ? (totalProfit / totalDeposits) * 100 : undefined}
+                  />
+                </div>
+                
+                {/* Sparen Category Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {sparenCategories.map((category) => (
+                    <CategoryCard
+                      key={category.id}
+                      category={category}
+                      onClick={() => navigate(`/categories/${category.id}`)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Normal Categories Section */}
+            {stats.categorySums.filter(cat => cat.type === 'normal').length > 0 && filters.categoryType !== 'sparen' && (
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-xl shadow-lg">
+                    <BarChart2 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-neutral-900">📊 Normal-Kategorien</h3>
+                    <p className="text-sm text-neutral-600">
+                      {stats.categorySums.filter(cat => cat.type === 'normal').length} {stats.categorySums.filter(cat => cat.type === 'normal').length === 1 ? 'Kategorie' : 'Kategorien'} • Individuelle Datentypen
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {stats.categorySums
+                    .filter(cat => cat.type === 'normal')
+                    .map((category) => (
+                      <CategoryCard
+                        key={category.id}
+                        category={category}
+                        onClick={() => navigate(`/categories/${category.id}`)}
+                      />
+                    ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <Card className="p-12 text-center">

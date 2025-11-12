@@ -52,7 +52,12 @@ function CategoryCard({ category, onClick }: CategoryCardProps) {
 
   return (
     <Card 
-      className="p-6 transition-all duration-200 flex flex-col" 
+      className={clsx(
+        "p-6 transition-all duration-200 flex flex-col",
+        isSparenType 
+          ? "border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30 hover:shadow-green-100" 
+          : "border-2 border-blue-100 bg-gradient-to-br from-white to-blue-50/20 hover:shadow-blue-100"
+      )} 
       hover
       onClick={handleCardClick}
     >
@@ -62,10 +67,10 @@ function CategoryCard({ category, onClick }: CategoryCardProps) {
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-lg font-semibold text-neutral-900">{category.name}</h3>
             <span className={clsx(
-              'text-xs px-2 py-0.5 rounded-full font-medium',
+              'text-xs px-2.5 py-1 rounded-full font-semibold shadow-sm',
               isSparenType 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-blue-100 text-blue-700'
+                ? 'bg-green-600 text-white' 
+                : 'bg-blue-600 text-white'
             )}>
               {isSparenType ? '💰 Sparen' : '📊 Normal'}
             </span>
@@ -73,21 +78,27 @@ function CategoryCard({ category, onClick }: CategoryCardProps) {
           <p className="text-xs text-neutral-500">{category.entryCount} Einträge</p>
         </div>
         <div className={clsx(
-          'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
-          isSparenType ? 'bg-green-50' : 'bg-blue-50'
+          'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm',
+          isSparenType ? 'bg-green-600' : 'bg-blue-600'
         )}>
           {isSparenType ? (
-            <Wallet className={clsx('w-5 h-5', 'text-green-600')} />
+            <Wallet className="w-6 h-6 text-white" />
           ) : (
-            <TrendingUp className={clsx('w-5 h-5', 'text-blue-600')} />
+            <TrendingUp className="w-6 h-6 text-white" />
           )}
         </div>
       </div>
 
       {/* Main Value */}
-      <div className="mb-4">
+      <div className={clsx(
+        "mb-4 p-3 rounded-lg",
+        isSparenType ? "bg-green-50/50" : "bg-blue-50/50"
+      )}>
         <p className="text-xs font-medium text-neutral-600 mb-1">Gesamtwert</p>
-        <p className="text-2xl font-bold text-neutral-900">
+        <p className={clsx(
+          "text-2xl font-bold",
+          isSparenType ? "text-green-700" : "text-blue-700"
+        )}>
           {formatValue(category.totalValue, category.unit)}
         </p>
       </div>
@@ -97,7 +108,7 @@ function CategoryCard({ category, onClick }: CategoryCardProps) {
         <div className="mb-4">
           <MiniSparkline 
             data={category.sparklineData} 
-            color={isSparenType ? '#10b981' : '#3b82f6'} 
+            color={isSparenType ? '#059669' : '#2563eb'} 
           />
         </div>
       )}
@@ -105,32 +116,35 @@ function CategoryCard({ category, onClick }: CategoryCardProps) {
       {/* Sparen Details - flexible height */}
       <div className="flex-grow mb-4">
         {isSparenType && category.totalDeposits > 0 && (
-          <div className="space-y-2 p-3 bg-neutral-50 rounded-lg">
+          <div className="space-y-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
             <div className="flex justify-between items-center">
-              <p className="text-xs font-medium text-neutral-600">Einzahlungen</p>
-              <p className="text-sm font-semibold text-green-600">
+              <p className="text-xs font-semibold text-neutral-700">💵 Einzahlungen</p>
+              <p className="text-base font-bold text-green-700">
                 {formatValue(category.totalDeposits, category.unit)}
               </p>
             </div>
             
             {category.profit !== undefined && (
-              <div className="flex justify-between items-center pt-2 border-t border-neutral-200">
-                <p className="text-xs font-medium text-neutral-600">Gewinn/Verlust</p>
-                <div className="flex items-center gap-1">
+              <div className={clsx(
+                "flex justify-between items-center pt-3 border-t-2",
+                category.profit >= 0 ? "border-green-300" : "border-red-300"
+              )}>
+                <p className="text-xs font-semibold text-neutral-700">📈 Gewinn/Verlust</p>
+                <div className="flex items-center gap-1.5">
                   {category.profit >= 0 ? (
-                    <TrendingUp className="w-3 h-3 text-green-600" />
+                    <TrendingUp className="w-4 h-4 text-green-600" />
                   ) : (
-                    <TrendingDown className="w-3 h-3 text-red-600" />
+                    <TrendingDown className="w-4 h-4 text-red-600" />
                   )}
                   <p className={clsx(
-                    'text-sm font-semibold',
-                    category.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                    'text-base font-bold',
+                    category.profit >= 0 ? 'text-green-700' : 'text-red-700'
                   )}>
                     {formatValue(category.profit, category.unit)}
                   </p>
                   {category.profitPercentage !== undefined && (
                     <span className={clsx(
-                      'text-xs',
+                      'text-xs font-semibold',
                       category.profit >= 0 ? 'text-green-600' : 'text-red-600'
                     )}>
                       ({category.profitPercentage > 0 ? '+' : ''}{category.profitPercentage.toFixed(2)}%)

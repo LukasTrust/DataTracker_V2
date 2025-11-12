@@ -13,7 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, PiggyBank, BarChart2 } from 'lucide-react'
 import Card from './Card'
 
 export interface ChartDataPoint {
@@ -142,11 +142,16 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
 
       {/* Sparen: Einzahlungen vs. Wert */}
       {sparenData.length > 0 && (
-        <Card className="p-6">
+        <Card className="p-6 bg-gradient-to-br from-white to-green-50/30 border-2 border-green-100">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-neutral-900">
-              Sparen: Einzahlungen vs. Wert
-            </h3>
+            <div>
+              <h3 className="text-lg font-bold text-neutral-900">
+                💰 Sparen: Einzahlungen vs. Wert
+              </h3>
+              <p className="text-xs text-neutral-600 mt-1">
+                Vergleich von Einzahlungen und aktuellem Wert
+              </p>
+            </div>
             {sparenData.length >= 2 && (
               <div className="flex items-center gap-2">
                 <span className={`text-sm font-semibold flex items-center gap-1 ${
@@ -180,7 +185,7 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#ffffff',
-                  border: '1px solid #e5e7eb',
+                  border: '2px solid #10b981',
                   borderRadius: '8px',
                   padding: '8px 12px',
                 }}
@@ -189,27 +194,27 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
               <Line
                 type="monotone"
                 dataKey="deposits"
-                stroke="#10b981"
-                strokeWidth={2}
+                stroke="#059669"
+                strokeWidth={3}
                 name="Einzahlungen"
-                dot={{ r: 3 }}
+                dot={{ r: 4, fill: '#059669' }}
               />
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#3b82f6"
-                strokeWidth={2}
+                stroke="#2563eb"
+                strokeWidth={3}
                 name="Aktueller Wert"
-                dot={{ r: 3 }}
+                dot={{ r: 4, fill: '#2563eb' }}
               />
               {sparenData.some(d => d.profit !== undefined) && (
                 <Line
                   type="monotone"
                   dataKey="profit"
                   stroke="#f59e0b"
-                  strokeWidth={2}
+                  strokeWidth={3}
                   name="Gewinn/Verlust"
-                  dot={{ r: 3 }}
+                  dot={{ r: 4, fill: '#f59e0b' }}
                 />
               )}
             </LineChart>
@@ -219,10 +224,20 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
 
       {/* Category Comparison - Sparen */}
       {sparenCategories.length > 0 && (
-        <Card className="p-6 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">
-            Sparen-Kategorien im Vergleich
-          </h3>
+        <Card className="p-6 lg:col-span-2 bg-gradient-to-br from-white to-green-50/30 border-2 border-green-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 bg-green-600 rounded-xl shadow-lg">
+              <PiggyBank className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-neutral-900">
+                💰 Sparen-Kategorien im Vergleich
+              </h3>
+              <p className="text-xs text-neutral-600">
+                Gesamtwerte der einzelnen Sparen-Kategorien
+              </p>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={sparenCategories}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -241,14 +256,14 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#ffffff',
-                  border: '1px solid #e5e7eb',
+                  border: '2px solid #10b981',
                   borderRadius: '8px',
                   padding: '8px 12px',
                 }}
               />
               <Bar 
                 dataKey="value" 
-                fill="#10b981" 
+                fill="#059669" 
                 radius={[8, 8, 0, 0]}
               />
             </BarChart>
@@ -258,10 +273,20 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
 
       {/* Category Comparison - Normal */}
       {normalCategories.length > 0 && (
-        <Card className="p-6 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">
-            Normal-Kategorien im Vergleich
-          </h3>
+        <Card className="p-6 lg:col-span-2 bg-gradient-to-br from-white to-blue-50/30 border-2 border-blue-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-xl shadow-lg">
+              <BarChart2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-neutral-900">
+                📊 Normal-Kategorien im Vergleich
+              </h3>
+              <p className="text-xs text-neutral-600">
+                Achtung: Unterschiedliche Einheiten (kWh, m³, etc.)
+              </p>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={normalCategories}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -280,14 +305,14 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#ffffff',
-                  border: '1px solid #e5e7eb',
+                  border: '2px solid #3b82f6',
                   borderRadius: '8px',
                   padding: '8px 12px',
                 }}
               />
               <Bar 
                 dataKey="value" 
-                fill="#3b82f6" 
+                fill="#2563eb" 
                 radius={[8, 8, 0, 0]}
               />
             </BarChart>
