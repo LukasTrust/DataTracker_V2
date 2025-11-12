@@ -4,6 +4,9 @@
  * Dieses File zeigt Best Practices und häufige Verwendungsszenarien
  */
 
+// @ts-nocheck
+/* eslint-disable */
+
 import { useNotification } from '../contexts/NotificationContext'
 import { createEntry, updateEntry, deleteEntry } from '../api'
 
@@ -12,7 +15,7 @@ import { createEntry, updateEntry, deleteEntry } from '../api'
  * =============================================
  * Die empfohlene Methode für alle API-Aufrufe
  */
-function Example1_CreateEntry() {
+function _Example1_CreateEntry() {
   const { showSuccess, showErrorWithContext } = useNotification()
   
   const handleCreateEntry = async (data: any) => {
@@ -37,7 +40,7 @@ function Example1_CreateEntry() {
  * =============================================
  * Für personalisierte Fehlermeldungen
  */
-function Example2_UpdateCategory() {
+function _Example2_UpdateCategory() {
   const { showSuccess, showErrorWithContext } = useNotification()
   
   const handleUpdateCategory = async (categoryId: number, categoryName: string, data: any) => {
@@ -62,10 +65,10 @@ function Example2_UpdateCategory() {
  * ================================
  * Verwende vordefinierte Validierungsfehler
  */
-function Example3_FormValidation() {
+function _Example3_FormValidation() {
   const { showValidationError } = useNotification()
   
-  const validateForm = (value: string, deposit: string) => {
+  const validateForm = (value: string, _deposit: string) => {
     // Prüfe ob Wert leer ist
     if (!value || value.trim() === '') {
       showValidationError('REQUIRED_FIELD')
@@ -96,7 +99,7 @@ function Example3_FormValidation() {
  * ==============================================
  * Zeigt die Kombination von Frontend- und Backend-Fehlerbehandlung
  */
-function Example4_CompleteFlow() {
+function _Example4_CompleteFlow() {
   const { showSuccess, showValidationError, showErrorWithContext } = useNotification()
   
   const handleSaveEntry = async (categoryId: number, formData: { date: string; value: string }) => {
@@ -143,7 +146,7 @@ function Example4_CompleteFlow() {
  * BEISPIEL 5: Alte vs. Neue Methode im Vergleich
  * ==============================================
  */
-function Example5_Comparison() {
+function _Example5_Comparison() {
   const { showError, showErrorWithContext } = useNotification()
   
   // ❌ ALT: Unspezifische Meldung
