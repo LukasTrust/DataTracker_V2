@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Download } from 'lucide-react'
 import Card from '../Card'
 import Button from '../Button'
@@ -19,15 +19,25 @@ interface CategoryTableProps {
   entries: Entry[]
   loading: boolean
   category: Category
-  onEntriesChange: () => void
+  onLocalUpdate?: (updatedEntries: Entry[]) => void // Callback für KPI-Updates ohne Reload
 }
 
 /**
  * Hauptkomponente für CategoryTable
  * Refaktoriert: 799 → ~200 Zeilen durch Aufteilung in Sub-Komponenten
+ * 
+ * Optimierung: Verwendet lokalen State für sofortige Updates ohne Page-Reload
  */
-function CategoryTable({ entries, loading, category, onEntriesChange }: CategoryTableProps) {
+function CategoryTable({ entries, loading, category, onLocalUpdate }: CategoryTableProps) {
   const { showSuccess, showError } = useNotification()
+  
+  // Lokaler State für optimistische Updates
+  const [localEntries, setLocalEntries] = useState<Entry[]>(entries)
+  
+  // Synchronisiere lokalen State mit Props wenn sich entries ändern
+  useEffect(() => {
+    setLocalEntries(entries)
+  }, [entries])
   
   // Edit State
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -61,9 +71,9 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
     }
   }
 
-  // Gefilterte und sortierte Einträge
+  // Gefilterte und sortierte Einträge - nutzt lokalen State für sofortige Updates
   const filteredAndSortedEntries = useMemo(() => {
-    let filtered = [...entries]
+    let filtered = [...localEntries]
 
     // Suche nach Kommentar
     if (searchTerm) {
@@ -109,7 +119,7 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
     })
 
     return filtered
-  }, [entries, searchTerm, dateFrom, dateTo, valueMin, valueMax, sortField, sortDirection])
+  }, [localEntries, searchTerm, dateFrom, dateTo, valueMin, valueMax, sortField, sortDirection])
 
   // Reset Filter
   const resetFilters = () => {
@@ -140,12 +150,31 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
     if (editingId === null) return
     
     try {
-      await updateEntry(category.id, editingId, editForm)
+      // Optimistisches Update: Sofort lokalen State aktualisieren
+      setLocalEntries(prev => 
+        prev.map(e => e.id === editingId ? { ...e, ...editForm } as Entry : e)
+      )
+      
+      // API Call im Hintergrund
+      const updatedEntry = await updateEntry(category.id, editingId, editForm)
+      
+      // Finales Update mit Server-Response
+      setLocalEntries(prev => 
+        prev.map(e => e.id === editingId ? updatedEntry : e)
+      )
+      
       setEditingId(null)
       setEditForm({})
-      onEntriesChange()
+      
+      // Nur Kategorien-Stats aktualisieren, keine komplette Neu-Ladung
+      if (onLocalUpdate) {
+        onLocalUpdate(localEntries)
+      }
+      
       showSuccess('Eintrag erfolgreich aktualisiert')
     } catch (error: any) {
+      // Bei Fehler: Rollback zum ursprünglichen State
+      setLocalEntries(entries)
       console.error('Fehler beim Aktualisieren des Eintrags:', error)
       const errorMessage = error.response?.data?.detail || 'Fehler beim Aktualisieren des Eintrags'
       showError(errorMessage)
@@ -156,7 +185,7 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
     setEditForm(prev => ({ ...prev, [field]: value }))
   }
 
-  // New Entry Handler
+  // New Entry Handler mit optimistischem Update
   const handleSaveNewEntry = async (data: NewEntryData) => {
     try {
       const entryData = {
@@ -167,9 +196,18 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
         comment: data.comment
       }
       
-      await createEntry(category.id, entryData)
+      // API Call
+      const newEntry = await createEntry(category.id, entryData)
+      
+      // Optimistisches Update: Neuen Eintrag sofort hinzufügen
+      setLocalEntries(prev => [...prev, newEntry])
+      
+      // Lokales Update für KPI-Berechnungen
+      if (onLocalUpdate) {
+        onLocalUpdate([...localEntries, newEntry])
+      }
+      
       showSuccess('Eintrag erfolgreich erstellt')
-      onEntriesChange()
     } catch (error: any) {
       console.error('Fehler beim Erstellen des Eintrags:', error)
       const errorMessage = error.response?.data?.detail || 'Fehler beim Erstellen des Eintrags'
@@ -188,10 +226,21 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
     if (!entryId) return
 
     try {
+      // Optimistisches Update: Eintrag sofort entfernen
+      setLocalEntries(prev => prev.filter(e => e.id !== entryId))
+      
+      // API Call im Hintergrund
       await deleteEntry(category.id, entryId)
+      
+      // Lokales Update für KPI-Berechnungen
+      if (onLocalUpdate) {
+        onLocalUpdate(localEntries.filter(e => e.id !== entryId))
+      }
+      
       showSuccess('Eintrag erfolgreich gelöscht')
-      onEntriesChange()
     } catch (error: any) {
+      // Bei Fehler: Rollback
+      setLocalEntries(entries)
       console.error('Fehler beim Löschen des Eintrags:', error)
       const errorMessage = error.response?.data?.detail || 'Fehler beim Löschen des Eintrags'
       showError(errorMessage)
@@ -235,14 +284,14 @@ function CategoryTable({ entries, loading, category, onEntriesChange }: Category
   }
 
   const isSparenCategory = category.type === 'sparen'
-  const hasEntries = entries.length > 0
+  const hasEntries = localEntries.length > 0
 
   return (
     <div className="space-y-6">
       {/* Statistiken - nur wenn Daten vorhanden */}
       {hasEntries && (
         <CategoryTableSummary
-          entries={entries}
+          entries={localEntries}
           filteredEntries={filteredAndSortedEntries}
           category={category}
         />

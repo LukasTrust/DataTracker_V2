@@ -36,7 +36,7 @@ function Categories() {
   })
 
   // Custom Hook für Entries
-  const { entries, loading: loadingEntries, refetch: refetchEntries } = useEntries(selectedCategory?.id ?? null)
+  const { entries, loading: loadingEntries } = useEntries(selectedCategory?.id ?? null)
 
   // Effects
   useEffect(() => {
@@ -211,9 +211,10 @@ function Categories() {
             entries={entries} 
             loading={loadingEntries}
             category={selectedCategory}
-            onEntriesChange={async () => {
-              await refetchEntries() // Entries neu laden
-              await refreshCategories() // Kategorien neu laden (für Statistiken in Sidebar)
+            onLocalUpdate={async () => {
+              // Nur Kategorien-Stats aktualisieren für Sidebar, ohne komplettes Reload
+              // Dies passiert asynchron im Hintergrund ohne Scroll-Sprung
+              await refreshCategories()
             }}
           />
         )}
