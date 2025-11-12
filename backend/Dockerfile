@@ -11,6 +11,11 @@ FROM python:3.11-slim as builder
 
 WORKDIR /app
 
+# System-Dependencies für Python-Packages installieren
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
 # Python Dependencies installieren
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
