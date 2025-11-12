@@ -118,8 +118,6 @@ def update_category(category_id: int, data: Category) -> Optional[Category]:
             # Update allowed fields
             if data.name is not None:
                 cat.name = data.name
-            if data.icon is not None:
-                cat.icon = data.icon
             if data.type is not None:
                 cat.type = data.type
             if data.unit is not None:
@@ -209,7 +207,6 @@ def duplicate_category(category_id: int) -> Optional[Category]:
             # Create new category with modified name
             new_cat = Category(
                 name=f"{original_cat.name}{DUPLICATE_SUFFIX}",
-                icon=original_cat.icon,
                 type=original_cat.type,
                 unit=original_cat.unit,
                 auto_create=original_cat.auto_create

@@ -1,7 +1,6 @@
 export interface Category {
   id: number
   name: string
-  icon?: string
   type: 'normal' | 'sparen'
   unit: string
   auto_create: boolean

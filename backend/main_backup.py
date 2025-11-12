@@ -118,7 +118,6 @@ def api_create_category(cat: CategoryCreate) -> CategoryRead:
         # Build category model
         category = Category(
             name=cat.name,
-            icon=cat.icon,
             type=cat.type if cat.type else CategoryType.NORMAL.value,
             unit=cat.unit,
             auto_create=cat.auto_create if cat.auto_create else False
