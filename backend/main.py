@@ -183,8 +183,11 @@ def api_update_category(category_id: int, cat: CategoryUpdate) -> CategoryRead:
         update_data = {k: v for k, v in cat.dict().items() if v is not None}
         model = Category(**update_data)
 
+        # Determine the final type (either from update or existing)
+        final_type = model.type if model.type is not None else existing.type
+        
         # Force € for sparen categories
-        if model.type == CategoryType.SPAREN.value:
+        if final_type == CategoryType.SPAREN.value:
             model.unit = SPAREN_DEFAULT_UNIT
 
         updated = update_category(category_id, model)
@@ -235,6 +238,10 @@ def api_create_entry(category_id: int, entry: EntryCreate) -> EntryRead:
         )
         return create_entry(model)
 
+    except ValueError as e:
+        # Duplicate entry error
+        logger.warning(f"Duplicate entry error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Failed to create entry: {e}")
         raise HTTPException(status_code=500, detail="Failed to create entry")
@@ -270,6 +277,10 @@ def api_update_entry(category_id: int, entry_id: int, entry: EntryUpdate) -> Ent
         updated = update_entry(entry_id, model)
         return updated
 
+    except ValueError as e:
+        # Duplicate entry error
+        logger.warning(f"Duplicate entry error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Failed to update entry {entry_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to update entry")

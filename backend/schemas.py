@@ -6,11 +6,12 @@ for request body validation and response serialization.
 """
 
 import re
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel, field_validator
 
 from .constants import DATE_REGEX_PATTERN
+from .utils import parse_flexible_float
 
 
 class CategoryCreate(BaseModel):
@@ -48,8 +49,8 @@ class EntryCreate(BaseModel):
     
     category_id: int
     date: str  # YYYY-MM
-    value: Optional[float] = 0.0
-    deposit: Optional[float] = None
+    value: Optional[Union[float, str]] = 0.0
+    deposit: Optional[Union[float, str]] = None
     comment: Optional[str] = None
     auto_generated: Optional[bool] = False
 
@@ -60,6 +61,36 @@ class EntryCreate(BaseModel):
         if not re.match(DATE_REGEX_PATTERN, v):
             raise ValueError("date must be in YYYY-MM format")
         return v
+    
+    @field_validator("value", mode="before")
+    @classmethod
+    def parse_value(cls, v: Optional[Union[float, str]]) -> float:
+        """Parse value with flexible decimal separator (comma or dot)."""
+        if v is None:
+            return 0.0
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, str):
+            try:
+                return parse_flexible_float(v)
+            except ValueError as e:
+                raise ValueError(f"Invalid value format: {e}")
+        raise ValueError(f"Invalid value type: {type(v)}")
+    
+    @field_validator("deposit", mode="before")
+    @classmethod
+    def parse_deposit(cls, v: Optional[Union[float, str]]) -> Optional[float]:
+        """Parse deposit with flexible decimal separator (comma or dot)."""
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, str):
+            try:
+                return parse_flexible_float(v)
+            except ValueError as e:
+                raise ValueError(f"Invalid deposit format: {e}")
+        raise ValueError(f"Invalid deposit type: {type(v)}")
 
 
 class EntryUpdate(BaseModel):
@@ -67,8 +98,8 @@ class EntryUpdate(BaseModel):
     
     category_id: Optional[int] = None
     date: Optional[str] = None
-    value: Optional[float] = None
-    deposit: Optional[float] = None
+    value: Optional[Union[float, str]] = None
+    deposit: Optional[Union[float, str]] = None
     comment: Optional[str] = None
     auto_generated: Optional[bool] = None
 
@@ -81,6 +112,36 @@ class EntryUpdate(BaseModel):
         if not re.match(DATE_REGEX_PATTERN, v):
             raise ValueError("date must be in YYYY-MM format")
         return v
+    
+    @field_validator("value", mode="before")
+    @classmethod
+    def parse_value(cls, v: Optional[Union[float, str]]) -> Optional[float]:
+        """Parse value with flexible decimal separator (comma or dot)."""
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, str):
+            try:
+                return parse_flexible_float(v)
+            except ValueError as e:
+                raise ValueError(f"Invalid value format: {e}")
+        raise ValueError(f"Invalid value type: {type(v)}")
+    
+    @field_validator("deposit", mode="before")
+    @classmethod
+    def parse_deposit(cls, v: Optional[Union[float, str]]) -> Optional[float]:
+        """Parse deposit with flexible decimal separator (comma or dot)."""
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, str):
+            try:
+                return parse_flexible_float(v)
+            except ValueError as e:
+                raise ValueError(f"Invalid deposit format: {e}")
+        raise ValueError(f"Invalid deposit type: {type(v)}")
 
 
 class EntryRead(BaseModel):

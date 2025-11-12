@@ -259,8 +259,19 @@ def create_entry(entry: Entry) -> Entry:
         Created entry with assigned ID
         
     Raises:
+        ValueError: If a duplicate entry exists for the same category and date
         Exception: If database operation fails
     """
+    # Check for duplicate entries
+    duplicate = check_duplicate_entry(entry.category_id, entry.date)
+    if duplicate:
+        error_msg = (
+            f"Ein Eintrag für das Datum {entry.date} existiert bereits "
+            f"in dieser Kategorie (ID: {duplicate.id})"
+        )
+        logger.warning(error_msg)
+        raise ValueError(error_msg)
+    
     try:
         with get_session() as s:
             s.add(entry)
@@ -337,6 +348,7 @@ def update_entry(entry_id: int, data: Entry) -> Optional[Entry]:
         Updated entry or None if not found
         
     Raises:
+        ValueError: If a duplicate entry exists for the same category and date
         Exception: If database operation fails
     """
     try:
@@ -348,6 +360,22 @@ def update_entry(entry_id: int, data: Entry) -> Optional[Entry]:
             if not ent:
                 logger.warning(f"Cannot update - entry not found: ID {entry_id}")
                 return None
+            
+            # Determine the category_id and date for duplicate check
+            check_category_id = data.category_id if data.category_id is not None else ent.category_id
+            check_date = data.date if data.date is not None else ent.date
+            
+            # Check for duplicates only if category_id or date is being changed
+            if (data.category_id is not None and data.category_id != ent.category_id) or \
+               (data.date is not None and data.date != ent.date):
+                duplicate = check_duplicate_entry(check_category_id, check_date, exclude_entry_id=entry_id)
+                if duplicate:
+                    error_msg = (
+                        f"Ein Eintrag für das Datum {check_date} existiert bereits "
+                        f"in dieser Kategorie (ID: {duplicate.id})"
+                    )
+                    logger.warning(error_msg)
+                    raise ValueError(error_msg)
             
             # Update allowed fields
             if data.category_id is not None:
@@ -456,6 +484,39 @@ def entry_exists_for_month(category_id: int, yyyy_mm: str) -> bool:
         logger.error(
             f"Failed to check entry existence for category {category_id}, "
             f"month {yyyy_mm}: {e}"
+        )
+        raise
+
+
+def check_duplicate_entry(category_id: int, date: str, exclude_entry_id: Optional[int] = None) -> Optional[Entry]:
+    """
+    Check if a duplicate entry exists for a category and date.
+    
+    Args:
+        category_id: ID of the category
+        date: Date string in YYYY-MM format
+        exclude_entry_id: Entry ID to exclude from check (for updates)
+        
+    Returns:
+        The duplicate Entry if found, None otherwise
+    """
+    try:
+        with get_session() as s:
+            stmt = select(Entry).where(
+                Entry.category_id == category_id,
+                Entry.date == date
+            )
+            
+            # Exclude the entry being updated
+            if exclude_entry_id is not None:
+                stmt = stmt.where(Entry.id != exclude_entry_id)
+            
+            duplicate = s.exec(stmt).first()
+            return duplicate
+    except Exception as e:
+        logger.error(
+            f"Failed to check for duplicate entry: category_id={category_id}, "
+            f"date={date}, exclude_entry_id={exclude_entry_id}: {e}"
         )
         raise
 

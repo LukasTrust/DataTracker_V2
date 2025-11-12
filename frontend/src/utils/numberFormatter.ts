@@ -101,12 +101,43 @@ export function formatValueWithUnit(value: number, unit: string, decimals: numbe
 }
 
 /**
- * Parsed einen deutschen Zahlenstring zu number
- * @param value - String mit deutscher Formatierung (z.B. "1.234,56")
- * @returns Zahlenwert
+ * Parst einen String mit flexiblem Dezimaltrennzeichen zu einer Zahl
+ * Akzeptiert sowohl Komma (,) als auch Punkt (.) als Dezimaltrennzeichen
+ * @param value - String-Darstellung einer Zahl (z.B. "1,50" oder "1.50")
+ * @returns Geparste Zahl oder NaN bei ungültiger Eingabe
+ * @example
+ * parseFlexibleNumber("1.50") // 1.5
+ * parseFlexibleNumber("1,50") // 1.5
+ * parseFlexibleNumber("1234.56") // 1234.56
+ * parseFlexibleNumber("1234,56") // 1234.56
+ * parseFlexibleNumber(" 42,00 ") // 42.0
  */
-export function parseGermanNumber(value: string): number {
-  // Entfernt Tausender-Trennzeichen und ersetzt Komma durch Punkt
-  const normalized = value.replace(/\./g, '').replace(',', '.')
-  return parseFloat(normalized)
+export function parseFlexibleNumber(value: string): number {
+  if (!value || typeof value !== 'string') {
+    return NaN
+  }
+
+  // Whitespace entfernen
+  const trimmed = value.trim()
+  
+  if (!trimmed) {
+    return NaN
+  }
+
+  // Komma durch Punkt ersetzen für das Parsing
+  const normalized = trimmed.replace(',', '.')
+  
+  const parsed = parseFloat(normalized)
+  
+  return parsed
+}
+
+/**
+ * Validiert, ob ein String eine gültige Zahl darstellt
+ * @param value - Zu validierender String
+ * @returns true wenn gültige Zahl, false sonst
+ */
+export function isValidNumber(value: string): boolean {
+  const parsed = parseFlexibleNumber(value)
+  return !isNaN(parsed) && isFinite(parsed)
 }

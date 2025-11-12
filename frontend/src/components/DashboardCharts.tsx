@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   LineChart,
   Line,
@@ -12,6 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import Card from './Card'
 
 export interface ChartDataPoint {
@@ -32,13 +34,74 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
   const sparenCategories = categoryComparison.filter(cat => cat.type === 'sparen')
   const normalCategories = categoryComparison.filter(cat => cat.type === 'normal')
   
+  // Calculate trend for total value
+  const totalValueTrend = useMemo(() => {
+    if (totalValueData.length < 2) {
+      return { percentageChange: 0, direction: 'neutral' as 'up' | 'down' | 'neutral' }
+    }
+    const firstValue = totalValueData[0].value
+    const lastValue = totalValueData[totalValueData.length - 1].value
+    const percentageChange = firstValue !== 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0
+    
+    let direction: 'up' | 'down' | 'neutral' = 'neutral'
+    if (Math.abs(percentageChange) < 0.5) {
+      direction = 'neutral'
+    } else if (percentageChange > 0) {
+      direction = 'up'
+    } else {
+      direction = 'down'
+    }
+    
+    return { percentageChange, direction }
+  }, [totalValueData])
+
+  // Calculate trend for sparen data
+  const sparenTrend = useMemo(() => {
+    if (sparenData.length < 2) {
+      return { percentageChange: 0, direction: 'neutral' as 'up' | 'down' | 'neutral' }
+    }
+    const firstValue = sparenData[0].value
+    const lastValue = sparenData[sparenData.length - 1].value
+    const percentageChange = firstValue !== 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0
+    
+    let direction: 'up' | 'down' | 'neutral' = 'neutral'
+    if (Math.abs(percentageChange) < 0.5) {
+      direction = 'neutral'
+    } else if (percentageChange > 0) {
+      direction = 'up'
+    } else {
+      direction = 'down'
+    }
+    
+    return { percentageChange, direction }
+  }, [sparenData])
+  
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       {/* Total Value Development */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold text-neutral-900 mb-4">
-          Gesamtwertentwicklung
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-neutral-900">
+            Gesamtwertentwicklung
+          </h3>
+          {totalValueData.length >= 2 && (
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-semibold flex items-center gap-1 ${
+                totalValueTrend.direction === 'up' ? 'text-green-600' : 
+                totalValueTrend.direction === 'down' ? 'text-red-600' : 
+                'text-neutral-500'
+              }`}>
+                {totalValueTrend.direction === 'up' && <TrendingUp className="w-4 h-4" />}
+                {totalValueTrend.direction === 'down' && <TrendingDown className="w-4 h-4" />}
+                {totalValueTrend.direction === 'neutral' && <Minus className="w-4 h-4" />}
+                {totalValueTrend.direction === 'up' && '↑'}
+                {totalValueTrend.direction === 'down' && '↓'}
+                {totalValueTrend.direction === 'neutral' && '→'}
+                {' '}{Math.abs(totalValueTrend.percentageChange).toFixed(1)}%
+              </span>
+            </div>
+          )}
+        </div>
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={totalValueData}>
             <defs>
@@ -80,9 +143,28 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
       {/* Sparen: Einzahlungen vs. Wert */}
       {sparenData.length > 0 && (
         <Card className="p-6">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">
-            Sparen: Einzahlungen vs. Wert
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-neutral-900">
+              Sparen: Einzahlungen vs. Wert
+            </h3>
+            {sparenData.length >= 2 && (
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-semibold flex items-center gap-1 ${
+                  sparenTrend.direction === 'up' ? 'text-green-600' : 
+                  sparenTrend.direction === 'down' ? 'text-red-600' : 
+                  'text-neutral-500'
+                }`}>
+                  {sparenTrend.direction === 'up' && <TrendingUp className="w-4 h-4" />}
+                  {sparenTrend.direction === 'down' && <TrendingDown className="w-4 h-4" />}
+                  {sparenTrend.direction === 'neutral' && <Minus className="w-4 h-4" />}
+                  {sparenTrend.direction === 'up' && '↑'}
+                  {sparenTrend.direction === 'down' && '↓'}
+                  {sparenTrend.direction === 'neutral' && '→'}
+                  {' '}{Math.abs(sparenTrend.percentageChange).toFixed(1)}%
+                </span>
+              </div>
+            )}
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={sparenData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

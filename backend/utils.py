@@ -165,6 +165,52 @@ def safe_float_conversion(value: Optional[float], default: float = 0.0) -> float
     return float(value) if value is not None else default
 
 
+def parse_flexible_float(value: str) -> float:
+    """
+    Parse a string with flexible decimal separator (comma or dot) into a float.
+    
+    Accepts both German (comma) and English (dot) decimal formats.
+    Removes whitespace and handles both separators intelligently.
+    
+    Args:
+        value: String representation of a number (e.g., "1,50" or "1.50")
+        
+    Returns:
+        Float value
+        
+    Raises:
+        ValueError: If the string cannot be parsed as a valid number
+        
+    Examples:
+        >>> parse_flexible_float("1.50")
+        1.5
+        >>> parse_flexible_float("1,50")
+        1.5
+        >>> parse_flexible_float("1234.56")
+        1234.56
+        >>> parse_flexible_float("1234,56")
+        1234.56
+        >>> parse_flexible_float(" 42,00 ")
+        42.0
+    """
+    if not value or not isinstance(value, str):
+        raise ValueError(f"Invalid input: {value}")
+    
+    # Remove whitespace
+    value = value.strip()
+    
+    if not value:
+        raise ValueError("Empty string cannot be converted to float")
+    
+    # Replace comma with dot for parsing
+    normalized = value.replace(',', '.')
+    
+    try:
+        return float(normalized)
+    except ValueError:
+        raise ValueError(f"Cannot convert '{value}' to a valid number")
+
+
 def calculate_percentage_change(
     current: float, 
     previous: float, 

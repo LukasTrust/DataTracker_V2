@@ -4,6 +4,7 @@ import Button from '../../Button'
 import { Category } from '../../../types/category'
 import { getTodayISO } from '../../../utils/dateFormatter'
 import { useNotification } from '../../../contexts/NotificationContext'
+import { parseFlexibleNumber, isValidNumber } from '../../../utils/numberFormatter'
 
 interface NewEntryRowProps {
   category: Category
@@ -39,17 +40,26 @@ function NewEntryRow({ category, onSave, disabled = false }: NewEntryRowProps) {
   const isSparenCategory = category.type === 'sparen'
 
   const handleSave = async () => {
-    // Validierung
-    const valueNum = parseFloat(formData.value)
-    if (!formData.value || isNaN(valueNum) || valueNum === 0) {
-      showError('Bitte einen gültigen Wert eingeben')
+    // Validierung mit flexiblem Zahlenformat
+    if (!formData.value || !isValidNumber(formData.value)) {
+      showError('Bitte einen gültigen Wert eingeben (z.B. 1.50 oder 1,50)')
+      return
+    }
+    
+    const valueNum = parseFlexibleNumber(formData.value)
+    if (valueNum === 0) {
+      showError('Der Wert darf nicht 0 sein')
       return
     }
 
     if (isSparenCategory) {
-      const depositNum = parseFloat(formData.deposit)
-      if (!formData.deposit || isNaN(depositNum) || depositNum === 0) {
-        showError('Bitte eine gültige Einzahlung eingeben')
+      if (!formData.deposit || !isValidNumber(formData.deposit)) {
+        showError('Bitte eine gültige Einzahlung eingeben (z.B. 1.50 oder 1,50)')
+        return
+      }
+      const depositNum = parseFlexibleNumber(formData.deposit)
+      if (depositNum === 0) {
+        showError('Die Einzahlung darf nicht 0 sein')
         return
       }
     }
@@ -62,7 +72,7 @@ function NewEntryRow({ category, onSave, disabled = false }: NewEntryRowProps) {
       const entryData: NewEntryData = {
         date: dateYYYYMM,
         value: valueNum,
-        deposit: isSparenCategory ? parseFloat(formData.deposit) : undefined,
+        deposit: isSparenCategory ? parseFlexibleNumber(formData.deposit) : undefined,
         comment: formData.comment || undefined,
       }
 
@@ -101,13 +111,13 @@ function NewEntryRow({ category, onSave, disabled = false }: NewEntryRowProps) {
       {/* Wert */}
       <td className={cellClass}>
         <input
-          type="number"
+          type="text"
+          inputMode="decimal"
           value={formData.value}
           onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-          placeholder="0.00"
+          placeholder="z.B. 1.50 oder 1,50"
           disabled={disabled || isSaving}
           className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:opacity-50 text-sm"
-          step="0.01"
         />
       </td>
 
@@ -115,13 +125,13 @@ function NewEntryRow({ category, onSave, disabled = false }: NewEntryRowProps) {
       {isSparenCategory && (
         <td className={cellClass}>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={formData.deposit}
             onChange={(e) => setFormData({ ...formData, deposit: e.target.value })}
-            placeholder="0.00"
+            placeholder="z.B. 1.50 oder 1,50"
             disabled={disabled || isSaving}
             className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:opacity-50 text-sm"
-            step="0.01"
           />
         </td>
       )}

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { BarChart3, Calendar } from 'lucide-react'
+import { BarChart3, Calendar, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import Card from '../Card'
 import Button from '../Button'
@@ -32,17 +32,23 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
     setEndDate(getTodayISO())
   }
   
-  // Filtere Einträge basierend auf Datum
+  // Filtere Einträge basierend auf Datum und sortiere chronologisch (älteste zuerst)
   const filteredEntries = useMemo(() => {
-    if (!startDate && !endDate) return entries
+    let filtered = entries
     
-    return entries.filter(entry => {
-      const entryDate = new Date(entry.date)
-      const start = startDate ? new Date(startDate) : new Date(0)
-      const end = endDate ? new Date(endDate) : new Date()
-      
-      return entryDate >= start && entryDate <= end
-    })
+    // Filter anwenden
+    if (startDate || endDate) {
+      filtered = entries.filter(entry => {
+        const entryDate = new Date(entry.date)
+        const start = startDate ? new Date(startDate) : new Date(0)
+        const end = endDate ? new Date(endDate) : new Date()
+        
+        return entryDate >= start && entryDate <= end
+      })
+    }
+    
+    // Chronologisch sortieren (älteste zuerst) für korrekte Trend-Berechnung
+    return [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   }, [entries, startDate, endDate])
   
   // Berechne Statistiken basierend auf gefilterten Einträgen
@@ -81,22 +87,62 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
     }
   }, [filteredEntries, category.type, stats.latest])
 
-  // Berechne Trend (letzten 50% vs. erste 50%)
-  const trend = useMemo(() => {
-    const halfPoint = Math.floor(filteredEntries.length / 2)
-    const firstHalf = filteredEntries.slice(0, halfPoint)
-    const secondHalf = filteredEntries.slice(halfPoint)
+  // Berechne Trend (vom ersten zum letzten Wert)
+  const trendAnalysis = useMemo(() => {
+    if (filteredEntries.length < 2) {
+      return {
+        percentageChange: 0,
+        absoluteChange: 0,
+        direction: 'neutral' as 'up' | 'down' | 'neutral',
+        firstValue: 0,
+        lastValue: 0,
+        trendLine: [] as { x: number; y: number }[]
+      }
+    }
+
+    const firstValue = filteredEntries[0].value
+    const lastValue = filteredEntries[filteredEntries.length - 1].value
+    const absoluteChange = lastValue - firstValue
+    const percentageChange = firstValue !== 0 ? (absoluteChange / firstValue) * 100 : 0
     
-    const firstAvg = firstHalf.length > 0 
-      ? firstHalf.reduce((sum, e) => sum + e.value, 0) / firstHalf.length 
-      : 0
-    const secondAvg = secondHalf.length > 0 
-      ? secondHalf.reduce((sum, e) => sum + e.value, 0) / secondHalf.length 
-      : 0
+    // Bestimme Richtung mit Toleranz für "stabil"
+    let direction: 'up' | 'down' | 'neutral' = 'neutral'
+    if (Math.abs(percentageChange) < 0.5) {
+      direction = 'neutral'
+    } else if (percentageChange > 0) {
+      direction = 'up'
+    } else {
+      direction = 'down'
+    }
+
+    // Berechne Trendlinie (lineare Regression)
+    const n = filteredEntries.length
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0
     
-    return firstAvg > 0 
-      ? ((secondAvg - firstAvg) / firstAvg) * 100 
-      : 0
+    filteredEntries.forEach((entry, index) => {
+      sumX += index
+      sumY += entry.value
+      sumXY += index * entry.value
+      sumX2 += index * index
+    })
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
+    const intercept = (sumY - slope * sumX) / n
+    
+    const trendLine = filteredEntries.map((_, index) => ({
+      x: index,
+      y: slope * index + intercept
+    }))
+
+    return {
+      percentageChange,
+      absoluteChange,
+      direction,
+      firstValue,
+      lastValue,
+      trendLine,
+      slope
+    }
   }, [filteredEntries])
   
   // Bereite Chart-Daten vor mit adaptiver Skalierung
@@ -112,7 +158,7 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
     // Für Sparen-Kategorien: berechne kumulative Einzahlungen
     let cumulativeDeposit = 0
     
-    return filteredEntries.map(entry => {
+    return filteredEntries.map((entry, index) => {
       let displayValue = entry.value
       
       // Bei großen Sprüngen: verwende logarithmische oder adaptive Skalierung
@@ -132,6 +178,9 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
         cumulativeDeposit += entry.deposit
       }
       
+      // Trendlinien-Wert für diesen Punkt
+      const trendValue = trendAnalysis.trendLine[index]?.y || entry.value
+      
       return {
         date: new Date(entry.date).toLocaleDateString('de-DE', { 
           day: '2-digit', 
@@ -140,13 +189,14 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
         }),
         value: entry.value,
         displayValue: displayValue,
+        trendValue: trendValue,
         deposit: entry.deposit || 0,
         cumulativeDeposit: cumulativeDeposit,
         profitLoss: entry.value - cumulativeDeposit,
         comment: entry.comment
       }
     })
-  }, [filteredEntries, category.type])
+  }, [filteredEntries, category.type, trendAnalysis.trendLine])
   
   // Custom Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -356,16 +406,81 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
           </div>
 
           {/* Trend-Karte */}
-          {filteredEntries.length >= 4 && (
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-4">Trend-Analyse</h3>
-              <div className="flex items-center gap-4">
-                <div className={`text-3xl font-bold ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {trend >= 0 ? '↑' : '↓'} {Math.abs(trend).toFixed(1)}%
+          {filteredEntries.length >= 2 && (
+            <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
+              <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                {trendAnalysis.direction === 'up' && <TrendingUp className="w-5 h-5 text-green-600" />}
+                {trendAnalysis.direction === 'down' && <TrendingDown className="w-5 h-5 text-red-600" />}
+                {trendAnalysis.direction === 'neutral' && <Minus className="w-5 h-5 text-neutral-500" />}
+                Trend-Analyse
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Prozentuale Veränderung */}
+                <div>
+                  <div className="text-xs text-neutral-600 mb-2">Entwicklung</div>
+                  <div className="flex items-center gap-3">
+                    <div className={`text-4xl font-bold ${
+                      trendAnalysis.direction === 'up' ? 'text-green-600' : 
+                      trendAnalysis.direction === 'down' ? 'text-red-600' : 
+                      'text-neutral-500'
+                    }`}>
+                      {trendAnalysis.direction === 'up' && '↑'}
+                      {trendAnalysis.direction === 'down' && '↓'}
+                      {trendAnalysis.direction === 'neutral' && '→'}
+                      {' '}{Math.abs(trendAnalysis.percentageChange).toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className={`text-sm font-medium mt-2 ${
+                    trendAnalysis.direction === 'up' ? 'text-green-700' : 
+                    trendAnalysis.direction === 'down' ? 'text-red-700' : 
+                    'text-neutral-600'
+                  }`}>
+                    {trendAnalysis.direction === 'up' && 'Steigender Trend'}
+                    {trendAnalysis.direction === 'down' && 'Fallender Trend'}
+                    {trendAnalysis.direction === 'neutral' && 'Stabiler Verlauf'}
+                  </div>
                 </div>
-                <div className="text-sm text-neutral-600">
-                  {trend >= 0 ? 'Steigerung' : 'Rückgang'} im Vergleich zur ersten Hälfte der Daten
+
+                {/* Absolute Veränderung */}
+                <div>
+                  <div className="text-xs text-neutral-600 mb-2">Absolute Veränderung</div>
+                  <div className={`text-2xl font-bold ${
+                    trendAnalysis.absoluteChange >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {trendAnalysis.absoluteChange >= 0 ? '+' : ''}{trendAnalysis.absoluteChange.toLocaleString('de-DE', { maximumFractionDigits: 2 })} {category.unit}
+                  </div>
+                  <div className="text-xs text-neutral-600 mt-2">
+                    vom ersten zum letzten Wert
+                  </div>
                 </div>
+
+                {/* Von-Bis Werte */}
+                <div>
+                  <div className="text-xs text-neutral-600 mb-2">Zeitraum</div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-neutral-500">Start:</span>
+                      <span className="text-sm font-semibold text-neutral-900">
+                        {trendAnalysis.firstValue.toLocaleString('de-DE')} {category.unit}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-neutral-500">Ende:</span>
+                      <span className="text-sm font-semibold text-neutral-900">
+                        {trendAnalysis.lastValue.toLocaleString('de-DE')} {category.unit}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Erklärungstext */}
+              <div className="mt-4 pt-4 border-t border-blue-200">
+                <p className="text-xs text-neutral-600">
+                  Die Trend-Analyse vergleicht den <span className="font-semibold">ersten</span> mit dem <span className="font-semibold">letzten</span> Wert 
+                  im angezeigten Zeitraum ({filteredEntries.length} Einträge).
+                </p>
               </div>
             </Card>
           )}
@@ -409,12 +524,13 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
                       }}
                     />
                   )}
+                  
                   {/* Hauptlinie: Aktueller Wert */}
                   <Line 
                     type="monotone" 
                     dataKey={category.type === 'sparen' ? 'value' : 'displayValue'}
                     stroke="#3b82f6" 
-                    strokeWidth={2}
+                    strokeWidth={3}
                     dot={{ fill: '#3b82f6', r: 4 }}
                     activeDot={{ r: 6, fill: '#2563eb' }}
                     name="Aktueller Wert"
@@ -435,15 +551,22 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            {/* Legende für Sparen-Kategorien */}
+            {/* Legende */}
             {category.type === 'sparen' && (
-              <div className="mt-4 flex justify-center gap-6">
+              <div className="mt-4 flex justify-center flex-wrap gap-4 md:gap-6">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-0.5 bg-blue-600"></div>
+                  <div className="w-6 h-0.5 bg-blue-600" style={{ height: '3px' }}></div>
                   <span className="text-sm text-neutral-700">Aktueller Wert</span>
                 </div>
+                
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-0.5 bg-amber-600 border-t-2 border-dashed border-amber-600"></div>
+                  <div 
+                    className="w-6 h-0.5 bg-amber-600"
+                    style={{ 
+                      height: '2px',
+                      backgroundImage: 'repeating-linear-gradient(90deg, #f59e0b 0, #f59e0b 5px, transparent 5px, transparent 10px)'
+                    }}
+                  ></div>
                   <span className="text-sm text-neutral-700">Gesamte Einzahlung</span>
                 </div>
               </div>

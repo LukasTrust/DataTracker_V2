@@ -3,7 +3,7 @@ import { Edit2, Trash2, X, Check } from 'lucide-react'
 import Button from '../../Button'
 import { Entry, Category } from '../../../types/category'
 import { formatDateGerman } from '../../../utils/dateFormatter'
-import { formatNumber } from '../../../utils/numberFormatter'
+import { formatNumber, parseFlexibleNumber } from '../../../utils/numberFormatter'
 
 interface CategoryTableRowProps {
   entry: Entry
@@ -33,9 +33,41 @@ function CategoryTableRow({
   onDelete,
 }: CategoryTableRowProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const [editValueStr, setEditValueStr] = useState<string>('')
+  const [editDepositStr, setEditDepositStr] = useState<string>('')
 
   const cellClass = "px-4 py-3 text-sm"
   const isSparenCategory = category.type === 'sparen'
+
+  // Initialize string values when editing starts
+  if (isEditing && editValueStr === '') {
+    setEditValueStr(String(editForm.value ?? entry.value))
+    if (isSparenCategory && editDepositStr === '') {
+      setEditDepositStr(String(editForm.deposit ?? entry.deposit ?? ''))
+    }
+  }
+
+  // Reset string values when editing ends
+  if (!isEditing && editValueStr !== '') {
+    setEditValueStr('')
+    setEditDepositStr('')
+  }
+
+  const handleValueChange = (value: string) => {
+    setEditValueStr(value)
+    const parsed = parseFlexibleNumber(value)
+    if (!isNaN(parsed)) {
+      onEditChange('value', parsed)
+    }
+  }
+
+  const handleDepositChange = (value: string) => {
+    setEditDepositStr(value)
+    const parsed = parseFlexibleNumber(value)
+    if (!isNaN(parsed)) {
+      onEditChange('deposit', parsed)
+    }
+  }
 
   if (isEditing) {
     // Edit Mode
@@ -54,11 +86,12 @@ function CategoryTableRow({
         {/* Wert */}
         <td className={cellClass}>
           <input
-            type="number"
-            value={editForm.value ?? entry.value}
-            onChange={(e) => onEditChange('value', parseFloat(e.target.value) || 0)}
+            type="text"
+            inputMode="decimal"
+            value={editValueStr}
+            onChange={(e) => handleValueChange(e.target.value)}
+            placeholder="z.B. 1.50 oder 1,50"
             className="w-full px-2 py-1 border border-neutral-300 rounded focus:ring-2 focus:ring-primary-500 text-sm"
-            step="0.01"
           />
         </td>
 
@@ -66,11 +99,12 @@ function CategoryTableRow({
         {isSparenCategory && (
           <td className={cellClass}>
             <input
-              type="number"
-              value={editForm.deposit ?? entry.deposit ?? ''}
-              onChange={(e) => onEditChange('deposit', parseFloat(e.target.value) || 0)}
+              type="text"
+              inputMode="decimal"
+              value={editDepositStr}
+              onChange={(e) => handleDepositChange(e.target.value)}
+              placeholder="z.B. 1.50 oder 1,50"
               className="w-full px-2 py-1 border border-neutral-300 rounded focus:ring-2 focus:ring-primary-500 text-sm"
-              step="0.01"
             />
           </td>
         )}
