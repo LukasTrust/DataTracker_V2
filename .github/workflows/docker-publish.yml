@@ -16,6 +16,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set lowercase image owner
+        run: |
+          # Ensure repository owner is lowercased for Docker image names
+          echo "IMAGE_OWNER=$(echo \"${{ github.repository_owner }}\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -36,8 +41,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-backend:latest
-            ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-backend:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/datatracker-backend:latest
+            ghcr.io/${{ env.IMAGE_OWNER }}/datatracker-backend:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
 
       - name: Build and push frontend image
@@ -47,11 +52,11 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-frontend:latest
-            ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-frontend:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/datatracker-frontend:latest
+            ghcr.io/${{ env.IMAGE_OWNER }}/datatracker-frontend:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
 
       - name: Show pushed image tags
         run: |
-          echo "Backend: ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-backend:${{ github.sha }}"
-          echo "Frontend: ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-frontend:${{ github.sha }}"
+          echo "Backend: ghcr.io/${{ env.IMAGE_OWNER }}/datatracker-backend:${{ github.sha }}"
+          echo "Frontend: ghcr.io/${{ env.IMAGE_OWNER }}/datatracker-frontend:${{ github.sha }}"
