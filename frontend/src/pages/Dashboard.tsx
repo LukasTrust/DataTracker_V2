@@ -45,7 +45,10 @@ function Dashboard() {
   const totalProfit = sparenCategories.reduce((sum, cat) => sum + (cat.profit || 0), 0)
   const totalDeposits = sparenCategories.reduce((sum, cat) => sum + cat.totalDeposits, 0)
 
-  if (loading || !stats || !timeseriesData) {
+  // Show initial loading only on first load
+  const isInitialLoad = loading && !stats && !timeseriesData
+  
+  if (isInitialLoad) {
     return (
       <>
         <PageHeader 
@@ -64,6 +67,14 @@ function Dashboard() {
       </>
     )
   }
+  
+  // Provide fallback data during filter updates
+  const displayStats = stats || { totalCategories: 0, categorySums: [] }
+  const displayTimeseriesData = timeseriesData || { 
+    totalValueData: [], 
+    sparenData: [], 
+    categoryComparison: [] 
+  }
 
   return (
     <>
@@ -72,9 +83,6 @@ function Dashboard() {
         description="Deine persönliche Finanz- und Datenübersicht"
         actions={
           <>
-            <Button variant="secondary" onClick={() => window.location.reload()}>
-              Aktualisieren
-            </Button>
             <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => navigate('/categories/new')}>
               Neue Kategorie
             </Button>
@@ -95,7 +103,7 @@ function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <KPICard
             title="Kategorien"
-            value={stats.totalCategories}
+            value={displayStats.totalCategories}
             icon={FolderOpen}
             description={`${totalEntries} Einträge insgesamt`}
             iconColor="text-blue-600"
@@ -136,23 +144,23 @@ function Dashboard() {
         </div>
 
         {/* Charts */}
-        {(timeseriesData.totalValueData.length > 0 || timeseriesData.categoryComparison.length > 0) && (
+        {(displayTimeseriesData.totalValueData.length > 0 || displayTimeseriesData.categoryComparison.length > 0) && (
           <DashboardCharts
-            totalValueData={timeseriesData.totalValueData}
-            sparenData={timeseriesData.sparenData}
-            categoryComparison={timeseriesData.categoryComparison}
+            totalValueData={displayTimeseriesData.totalValueData}
+            sparenData={displayTimeseriesData.sparenData}
+            categoryComparison={displayTimeseriesData.categoryComparison}
           />
         )}
 
         {/* Category Cards */}
-        {stats.categorySums.length > 0 ? (
+        {displayStats.categorySums.length > 0 ? (
           <>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-neutral-900">
                 Deine Kategorien
               </h2>
               <p className="text-sm text-neutral-600">
-                {stats.categorySums.length} {stats.categorySums.length === 1 ? 'Kategorie' : 'Kategorien'}
+                {displayStats.categorySums.length} {displayStats.categorySums.length === 1 ? 'Kategorie' : 'Kategorien'}
                 {filters.categoryType !== 'all' && ` (gefiltert nach ${filters.categoryType === 'sparen' ? 'Sparen' : 'Normal'})`}
               </p>
             </div>
@@ -197,7 +205,7 @@ function Dashboard() {
             )}
             
             {/* Normal Categories Section */}
-            {stats.categorySums.filter(cat => cat.type === 'normal').length > 0 && filters.categoryType !== 'sparen' && (
+            {displayStats.categorySums.filter(cat => cat.type === 'normal').length > 0 && filters.categoryType !== 'sparen' && (
               <div>
                 <div className="flex items-center gap-3 mb-6">
                   <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-xl shadow-lg">
@@ -206,13 +214,13 @@ function Dashboard() {
                   <div>
                     <h3 className="text-lg font-bold text-neutral-900">📊 Normal-Kategorien</h3>
                     <p className="text-sm text-neutral-600">
-                      {stats.categorySums.filter(cat => cat.type === 'normal').length} {stats.categorySums.filter(cat => cat.type === 'normal').length === 1 ? 'Kategorie' : 'Kategorien'} • Individuelle Datentypen
+                      {displayStats.categorySums.filter(cat => cat.type === 'normal').length} {displayStats.categorySums.filter(cat => cat.type === 'normal').length === 1 ? 'Kategorie' : 'Kategorien'} • Individuelle Datentypen
                     </p>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {stats.categorySums
+                  {displayStats.categorySums
                     .filter(cat => cat.type === 'normal')
                     .map((category) => (
                       <CategoryCard

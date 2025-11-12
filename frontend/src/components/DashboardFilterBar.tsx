@@ -27,10 +27,6 @@ function DashboardFilterBar({ filters, onFiltersChange, onExport, onReset }: Das
     onFiltersChange({ ...filters, endDate: date })
   }
 
-  const handleCategoryTypeChange = (type: 'all' | 'sparen' | 'normal') => {
-    onFiltersChange({ ...filters, categoryType: type })
-  }
-
   const hasActiveFilters = filters.startDate || filters.endDate || filters.categoryType !== 'all'
 
   return (
@@ -100,22 +96,6 @@ function DashboardFilterBar({ filters, onFiltersChange, onExport, onReset }: Das
                 onChange={(e) => handleEndDateChange(e.target.value)}
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
-            </div>
-
-            {/* Category Type */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Kategorie-Typ
-              </label>
-              <select
-                value={filters.categoryType || 'all'}
-                onChange={(e) => handleCategoryTypeChange(e.target.value as 'all' | 'sparen' | 'normal')}
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="all">Alle Kategorien</option>
-                <option value="sparen">Nur Sparen</option>
-                <option value="normal">Nur Normal</option>
-              </select>
             </div>
           </div>
         </div>
