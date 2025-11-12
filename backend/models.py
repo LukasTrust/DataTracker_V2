@@ -20,7 +20,6 @@ class Category(SQLModel, table=True):
     Attributes:
         id: Primary key
         name: Category name
-        icon: Optional icon identifier for UI
         type: Category type ("normal" or "sparen")
         unit: Measurement unit (e.g., "€", "km", "l")
         auto_create: Whether to auto-create zero entries monthly
@@ -31,7 +30,6 @@ class Category(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
-    icon: Optional[str] = None
     type: str = "normal"  # "normal" or "sparen"
     unit: str
     auto_create: bool = False

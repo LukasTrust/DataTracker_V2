@@ -17,7 +17,6 @@ class CategoryCreate(BaseModel):
     """Schema for creating a new category."""
     
     name: str
-    icon: Optional[str] = None
     type: Optional[str] = "normal"
     unit: str
     auto_create: Optional[bool] = False
@@ -27,7 +26,6 @@ class CategoryUpdate(BaseModel):
     """Schema for updating an existing category (all fields optional)."""
     
     name: Optional[str] = None
-    icon: Optional[str] = None
     type: Optional[str] = None
     unit: Optional[str] = None
     auto_create: Optional[bool] = None
@@ -38,7 +36,6 @@ class CategoryRead(BaseModel):
     
     id: int
     name: str
-    icon: Optional[str] = None
     type: str
     unit: Optional[str] = None
     auto_create: bool
