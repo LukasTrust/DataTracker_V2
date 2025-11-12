@@ -189,6 +189,7 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
                   borderRadius: '8px',
                   padding: '8px 12px',
                 }}
+                formatter={(value: number) => value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               />
               <Legend />
               <Line

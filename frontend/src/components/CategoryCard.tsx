@@ -1,7 +1,6 @@
-import { TrendingUp, TrendingDown, Wallet, BarChart3, Eye } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Card from './Card'
-import Button from './Button'
 import MiniSparkline from './MiniSparkline'
 import clsx from 'clsx'
 
@@ -37,26 +36,19 @@ function CategoryCard({ category, onClick }: CategoryCardProps) {
   const handleCardClick = () => {
     if (onClick) {
       onClick()
+    } else {
+      // Direkt zur Kategorie-Detailansicht navigieren
+      navigate(`/categories/${category.id}`)
     }
-  }
-
-  const handleViewDetails = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    navigate(`/categories/${category.id}?tab=table`)
-  }
-
-  const handleViewCharts = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    navigate(`/categories/${category.id}?tab=graphs`)
   }
 
   return (
     <Card 
       className={clsx(
-        "p-6 transition-all duration-200 flex flex-col",
+        "p-6 transition-all duration-200 flex flex-col cursor-pointer",
         isSparenType 
-          ? "border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30 hover:shadow-green-100" 
-          : "border-2 border-blue-100 bg-gradient-to-br from-white to-blue-50/20 hover:shadow-blue-100"
+          ? "border-2 border-green-200 bg-gradient-to-br from-white to-green-50/30 hover:shadow-lg hover:shadow-green-100 hover:border-green-300" 
+          : "border-2 border-blue-100 bg-gradient-to-br from-white to-blue-50/20 hover:shadow-lg hover:shadow-blue-100 hover:border-blue-200"
       )} 
       hover
       onClick={handleCardClick}
@@ -155,28 +147,6 @@ function CategoryCard({ category, onClick }: CategoryCardProps) {
             )}
           </div>
         )}
-      </div>
-
-      {/* Quick Actions - always at the bottom */}
-      <div className="flex gap-2 pt-4 border-t border-neutral-200 mt-auto">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="flex-1"
-          icon={<Eye className="w-4 h-4" />}
-          onClick={handleViewDetails}
-        >
-          Details
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="flex-1"
-          icon={<BarChart3 className="w-4 h-4" />}
-          onClick={handleViewCharts}
-        >
-          Graphen
-        </Button>
       </div>
     </Card>
   )
