@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   frontend:
     # IMAGE_PREFIX can be set in environment to override (e.g. ghcr.io/OWNER or dockerhubuser)
-    image: ${IMAGE_PREFIX:-ghcr.io/LukasTrust}/datatracker-frontend:latest
+    image: ${IMAGE_PREFIX:-ghcr.io/lukastrust}/datatracker-frontend:latest
     container_name: datatracker_frontend
     ports:
       - "3000:3000"
@@ -23,7 +21,7 @@ services:
       start_period: 40s
 
   backend:
-    image: ${IMAGE_PREFIX:-ghcr.io/LukasTrust}/datatracker-backend:latest
+    image: ${IMAGE_PREFIX:-ghcr.io/lukastrust}/datatracker-backend:latest
     container_name: datatracker_backend
     expose:
       - "8000"
