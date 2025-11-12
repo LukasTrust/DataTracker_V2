@@ -19,7 +19,8 @@ jobs:
       - name: Set lowercase image owner
         run: |
           # Ensure repository owner is lowercased for Docker image names
-          echo "IMAGE_OWNER=$(echo \"${{ github.repository_owner }}\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          # Avoid writing extra quotes into GITHUB_ENV (they become part of the value)
+          echo "IMAGE_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
