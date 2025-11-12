@@ -29,7 +29,7 @@ interface CategoryTableProps {
  * Optimierung: Verwendet lokalen State für sofortige Updates ohne Page-Reload
  */
 function CategoryTable({ entries, loading, category, onLocalUpdate }: CategoryTableProps) {
-  const { showSuccess, showError } = useNotification()
+  const { showSuccess, showErrorWithContext } = useNotification()
   
   // Lokaler State für optimistische Updates
   const [localEntries, setLocalEntries] = useState<Entry[]>(entries)
@@ -176,8 +176,10 @@ function CategoryTable({ entries, loading, category, onLocalUpdate }: CategoryTa
       // Bei Fehler: Rollback zum ursprünglichen State
       setLocalEntries(entries)
       console.error('Fehler beim Aktualisieren des Eintrags:', error)
-      const errorMessage = error.response?.data?.detail || 'Fehler beim Aktualisieren des Eintrags'
-      showError(errorMessage)
+      showErrorWithContext(error, {
+        action: 'update',
+        entityType: 'entry',
+      })
     }
   }
 
@@ -210,8 +212,10 @@ function CategoryTable({ entries, loading, category, onLocalUpdate }: CategoryTa
       showSuccess('Eintrag erfolgreich erstellt')
     } catch (error: any) {
       console.error('Fehler beim Erstellen des Eintrags:', error)
-      const errorMessage = error.response?.data?.detail || 'Fehler beim Erstellen des Eintrags'
-      showError(errorMessage)
+      showErrorWithContext(error, {
+        action: 'create',
+        entityType: 'entry',
+      })
       throw error // Werfe Fehler weiter, damit NewEntryRow ihn abfangen kann
     }
   }
@@ -242,8 +246,10 @@ function CategoryTable({ entries, loading, category, onLocalUpdate }: CategoryTa
       // Bei Fehler: Rollback
       setLocalEntries(entries)
       console.error('Fehler beim Löschen des Eintrags:', error)
-      const errorMessage = error.response?.data?.detail || 'Fehler beim Löschen des Eintrags'
-      showError(errorMessage)
+      showErrorWithContext(error, {
+        action: 'delete',
+        entityType: 'entry',
+      })
     } finally {
       setDeleteConfirm({ isOpen: false, entryId: null })
     }
@@ -266,7 +272,11 @@ function CategoryTable({ entries, loading, category, onLocalUpdate }: CategoryTa
       showSuccess('Daten erfolgreich exportiert')
     } catch (error) {
       console.error('Fehler beim Exportieren:', error)
-      showError('Fehler beim Exportieren der Daten')
+      showErrorWithContext(error, {
+        action: 'export',
+        entityType: 'data',
+        entityName: category.name,
+      })
     } finally {
       setExporting(false)
     }

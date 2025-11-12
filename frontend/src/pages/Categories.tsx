@@ -18,7 +18,7 @@ import { useEntries } from '../hooks/useEntries'
 function Categories() {
   const navigate = useNavigate()
   const { id: categoryIdParam } = useParams<{ id: string }>()
-  const { showSuccess, showError } = useNotification()
+  const { showSuccess, showErrorWithContext } = useNotification()
   const { categories, loading, updateCategoryInList, removeCategoryFromList, addCategory, refreshCategories } = useCategories()
   
   // State Management
@@ -84,7 +84,10 @@ function Categories() {
       showSuccess('Die Kategorie wurde erfolgreich gelöscht.')
     } catch (error) {
       console.error('Fehler beim Löschen:', error)
-      showError('Fehler beim Löschen der Kategorie.')
+      showErrorWithContext(error, {
+        action: 'delete',
+        entityType: 'category',
+      })
     } finally {
       setDeleteConfirm({ isOpen: false, categoryId: null })
     }
@@ -100,7 +103,11 @@ function Categories() {
       showSuccess('Die Änderungen wurden erfolgreich gespeichert.')
     } catch (error) {
       console.error('Fehler beim Aktualisieren:', error)
-      showError('Fehler beim Aktualisieren der Kategorie.')
+      showErrorWithContext(error, {
+        action: 'update',
+        entityType: 'category',
+        entityName: selectedCategory.name,
+      })
     }
   }
 
@@ -119,7 +126,11 @@ function Categories() {
       handleBackToList()
     } catch (error) {
       console.error('Fehler beim Löschen:', error)
-      showError('Fehler beim Löschen der Kategorie.')
+      showErrorWithContext(error, {
+        action: 'delete',
+        entityType: 'category',
+        entityName: selectedCategory.name,
+      })
     } finally {
       setDeleteConfirm({ isOpen: false, categoryId: null })
     }
@@ -135,7 +146,11 @@ function Categories() {
       showSuccess('Die Kategorie wurde erfolgreich dupliziert.')
     } catch (error) {
       console.error('Fehler beim Duplizieren:', error)
-      showError('Fehler beim Duplizieren der Kategorie.')
+      showErrorWithContext(error, {
+        action: 'duplicate',
+        entityType: 'category',
+        entityName: selectedCategory.name,
+      })
     }
   }
 

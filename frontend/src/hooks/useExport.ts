@@ -16,7 +16,7 @@ interface UseExportReturn {
  */
 export function useExport(): UseExportReturn {
   const [exporting, setExporting] = useState(false)
-  const { showSuccess, showError, showInfo } = useNotification()
+  const { showSuccess, showErrorWithContext, showInfo } = useNotification()
 
   const exportAll = async () => {
     try {
@@ -29,7 +29,10 @@ export function useExport(): UseExportReturn {
       showSuccess('Daten erfolgreich exportiert')
     } catch (error) {
       console.error('Export-Fehler:', error)
-      showError('Fehler beim Exportieren')
+      showErrorWithContext(error, {
+        action: 'export',
+        entityType: 'data',
+      })
     } finally {
       setExporting(false)
     }
@@ -47,7 +50,11 @@ export function useExport(): UseExportReturn {
       showSuccess(`"${categoryName}" erfolgreich exportiert`)
     } catch (error) {
       console.error('Export-Fehler:', error)
-      showError(`Fehler beim Exportieren von "${categoryName}"`)
+      showErrorWithContext(error, {
+        action: 'export',
+        entityType: 'category',
+        entityName: categoryName,
+      })
     } finally {
       setExporting(false)
     }

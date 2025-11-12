@@ -23,7 +23,7 @@ export interface NewEntryData {
  * Formular-Zeile zum Erstellen neuer Einträge in CategoryTable
  */
 function NewEntryRow({ category, onSave, disabled = false }: NewEntryRowProps) {
-  const { showError } = useNotification()
+  const { showValidationError } = useNotification()
   const [formData, setFormData] = useState<{
     date: string // YYYY-MM-DD for input type="month"
     value: string
@@ -42,24 +42,24 @@ function NewEntryRow({ category, onSave, disabled = false }: NewEntryRowProps) {
   const handleSave = async () => {
     // Validierung mit flexiblem Zahlenformat
     if (!formData.value || !isValidNumber(formData.value)) {
-      showError('Bitte einen gültigen Wert eingeben (z.B. 1.50 oder 1,50)')
+      showValidationError('INVALID_NUMBER')
       return
     }
     
     const valueNum = parseFlexibleNumber(formData.value)
     if (valueNum === 0) {
-      showError('Der Wert darf nicht 0 sein')
+      showValidationError('ZERO_VALUE')
       return
     }
 
     if (isSparenCategory) {
       if (!formData.deposit || !isValidNumber(formData.deposit)) {
-        showError('Bitte eine gültige Einzahlung eingeben (z.B. 1.50 oder 1,50)')
+        showValidationError('INVALID_NUMBER')
         return
       }
       const depositNum = parseFlexibleNumber(formData.deposit)
       if (depositNum === 0) {
-        showError('Die Einzahlung darf nicht 0 sein')
+        showValidationError('ZERO_VALUE')
         return
       }
     }
