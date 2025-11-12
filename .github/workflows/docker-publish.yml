@@ -36,8 +36,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/datatracker-backend:latest
-            ghcr.io/${{ github.repository_owner }}/datatracker-backend:${{ github.sha }}
+            ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-backend:latest
+            ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-backend:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
 
       - name: Build and push frontend image
@@ -47,11 +47,11 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/datatracker-frontend:latest
-            ghcr.io/${{ github.repository_owner }}/datatracker-frontend:${{ github.sha }}
+            ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-frontend:latest
+            ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-frontend:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
 
       - name: Show pushed image tags
         run: |
-          echo "Backend: ghcr.io/${{ github.repository_owner }}/datatracker-backend:${{ github.sha }}"
-          echo "Frontend: ghcr.io/${{ github.repository_owner }}/datatracker-frontend:${{ github.sha }}"
+          echo "Backend: ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-backend:${{ github.sha }}"
+          echo "Frontend: ghcr.io/${{ toLower(github.repository_owner) }}/datatracker-frontend:${{ github.sha }}"
