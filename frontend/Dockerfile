@@ -13,7 +13,9 @@ WORKDIR /app
 
 # Package-Dateien kopieren und Dependencies installieren
 COPY package*.json ./
-RUN npm ci
+// Ensure devDependencies (like typescript) are installed in the builder stage
+# npm v9+ supports --include=dev to explicitly include devDependencies during install
+RUN npm ci --include=dev
 
 # Source-Code kopieren und Build durchführen
 COPY . .
