@@ -34,11 +34,12 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
   
   // Filtere Einträge basierend auf Datum und sortiere chronologisch (älteste zuerst)
   const filteredEntries = useMemo(() => {
-    let filtered = entries
+    // Filtere automatisch erstellte Einträge aus
+    let filtered = entries.filter(entry => !entry.auto_generated)
     
     // Filter anwenden
     if (startDate || endDate) {
-      filtered = entries.filter(entry => {
+      filtered = filtered.filter(entry => {
         const entryDate = new Date(entry.date)
         const start = startDate ? new Date(startDate) : new Date(0)
         const end = endDate ? new Date(endDate) : new Date()

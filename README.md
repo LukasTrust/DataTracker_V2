@@ -16,8 +16,26 @@ DataTracker hilft dir, verschiedene Aspekte deines Lebens zu verfolgen und zu vi
 - 📁 **Flexible Kategorien** - Erstelle eigene Tracking-Kategorien mit individuellen Einheiten
 - 💰 **Sparen-Modus** - Speziell für Finanztracking mit Einzahlungen und Zinsen
 - 📈 **Interaktive Charts** - Visualisiere deine Fortschritte monatlich
-- 📅 **Automatische Einträge** - Erstellt monatlich automatisch neue Einträge
+- 📅 **Automatische Einträge** - Erstellt monatlich automatisch neue Einträge (Details siehe unten)
 - 📤 **Excel Export** - Exportiere alle Daten strukturiert
+
+### 🤖 Automatische Eintrags-Erstellung
+
+Kategorien können so konfiguriert werden, dass sie **automatisch** am 1. jeden Monats um 00:05 Uhr einen Platzhalter-Eintrag mit Wert 0 erstellen:
+
+- **Sammlung möglich**: Automatische Einträge sammeln sich an (Oktober, November, Dezember, etc.)
+- **Bearbeitung**: Du kannst diese Einträge jederzeit bearbeiten - sie werden dann zu normalen Einträgen
+- **Keine Datenverfälschung**: Auto-Einträge erscheinen **NUR** in der Tabelle
+- **Keine Berechnungen**: Sie werden **NICHT** in Statistiken, Grafiken oder dem Dashboard berücksichtigt
+- **Visuelle Kennzeichnung**: Auto-Einträge sind in der Tabelle mit einem "Auto" Badge markiert
+
+**Beispiel-Workflow:**
+1. Du erstellst eine Kategorie "Sport" und aktivierst "Automatische Einträge"
+2. Am 1. Oktober wird ein Auto-Eintrag für Oktober erstellt (Wert: 0)
+3. Am 1. November wird ein Auto-Eintrag für November erstellt
+4. Am 1. Dezember wird ein Auto-Eintrag für Dezember erstellt
+5. Du kannst jetzt alle drei Einträge nach und nach ausfüllen
+6. Sobald du einen Eintrag bearbeitest, wird er zu einem normalen Eintrag und fließt in alle Auswertungen ein
 
 ## 🛠️ Technologien
 

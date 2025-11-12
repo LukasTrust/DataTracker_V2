@@ -155,8 +155,11 @@ function CategoryTable({ entries, loading, category, onLocalUpdate }: CategoryTa
         prev.map(e => e.id === editingId ? { ...e, ...editForm } as Entry : e)
       )
       
+      // Wenn ein auto-generierter Eintrag bearbeitet wird, setze auto_generated auf false
+      const editData = { ...editForm, auto_generated: false }
+      
       // API Call im Hintergrund
-      const updatedEntry = await updateEntry(category.id, editingId, editForm)
+      const updatedEntry = await updateEntry(category.id, editingId, editData)
       
       // Finales Update mit Server-Response
       setLocalEntries(prev => 

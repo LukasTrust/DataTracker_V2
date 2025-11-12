@@ -593,6 +593,9 @@ def aggregate_entries(
         with get_session() as s:
             stmt = select(Entry)
             
+            # Filter out auto-generated entries
+            stmt = stmt.where(Entry.auto_generated == False)
+            
             if category_ids:
                 stmt = stmt.where(Entry.category_id.in_(category_ids))
             if from_date:
@@ -660,6 +663,9 @@ def monthly_by_year(
     try:
         with get_session() as s:
             stmt = select(Entry).where(Entry.category_id == category_id)
+            
+            # Filter out auto-generated entries
+            stmt = stmt.where(Entry.auto_generated == False)
             
             if from_year:
                 stmt = stmt.where(Entry.date >= f"{from_year:04d}-01")

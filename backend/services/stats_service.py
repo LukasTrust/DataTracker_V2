@@ -32,7 +32,9 @@ def calculate_sparkline_data(entries: List[Entry], limit: int = 10) -> List[Dict
     Returns:
         List of sparkline data points with date and value
     """
-    sorted_entries = sorted(entries, key=lambda x: x.date)
+    # Filter out auto-generated entries
+    manual_entries = [e for e in entries if not e.auto_generated]
+    sorted_entries = sorted(manual_entries, key=lambda x: x.date)
     last_entries = sorted_entries[-limit:] if len(sorted_entries) > limit else sorted_entries
     
     return [
@@ -58,14 +60,17 @@ def calculate_category_total(category: Category, entries: List[Entry]) -> float:
     Returns:
         Total value
     """
-    if not entries:
+    # Filter out auto-generated entries
+    manual_entries = [e for e in entries if not e.auto_generated]
+    
+    if not manual_entries:
         return 0.0
     
     if category.type == CategoryType.SPAREN.value:
-        sorted_entries = sorted(entries, key=lambda x: x.date)
+        sorted_entries = sorted(manual_entries, key=lambda x: x.date)
         return safe_float_conversion(sorted_entries[-1].value)
     
-    return sum(safe_float_conversion(e.value) for e in entries)
+    return sum(safe_float_conversion(e.value) for e in manual_entries)
 
 
 def calculate_profit_metrics(
@@ -111,16 +116,19 @@ def get_dashboard_stats() -> Dict[str, Any]:
     for cat in categories:
         entries = list_entries_for_category(cat.id)
         
+        # Filter out auto-generated entries for calculations
+        manual_entries = [e for e in entries if not e.auto_generated]
+        
         # Calculate totals
-        total_value = calculate_category_total(cat, entries)
+        total_value = calculate_category_total(cat, manual_entries)
         total_deposits = sum(
             safe_float_conversion(e.deposit) 
-            for e in entries 
+            for e in manual_entries 
             if e.deposit is not None
         )
         
         # Calculate sparkline
-        sparkline_data = calculate_sparkline_data(entries)
+        sparkline_data = calculate_sparkline_data(manual_entries)
         
         # Calculate profit metrics for savings categories
         profit_metrics = calculate_profit_metrics(total_value, total_deposits)
@@ -132,7 +140,7 @@ def get_dashboard_stats() -> Dict[str, Any]:
             "unit": cat.unit,
             "totalValue": total_value,
             "totalDeposits": total_deposits,
-            "entryCount": len(entries),
+            "entryCount": len(manual_entries),
             "sparklineData": sparkline_data,
             **profit_metrics
         })
@@ -177,6 +185,9 @@ def get_dashboard_timeseries(
     
     for cat in categories:
         entries = list_entries_for_category(cat.id)
+        
+        # Filter out auto-generated entries
+        entries = [e for e in entries if not e.auto_generated]
         
         # Apply date filters
         if start_date:
@@ -251,6 +262,7 @@ def get_dashboard_timeseries(
         cat = data['category']
         entries = data['entries']
         
+        # Entries are already filtered (no auto-generated)
         total_value = calculate_category_total(cat, entries)
         
         category_comparison.append({

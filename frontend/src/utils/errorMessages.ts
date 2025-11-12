@@ -46,6 +46,10 @@ const BACKEND_ERROR_MESSAGES: Record<string, { message: string; suggestion?: str
     message: 'Dieser Eintrag existiert bereits.',
     suggestion: 'Bitte wähle ein anderes Datum oder aktualisiere den bestehenden Eintrag.',
   },
+  'existiert bereits': {
+    message: 'Ein Eintrag für dieses Datum existiert bereits.',
+    suggestion: 'Du kannst den bestehenden Eintrag bearbeiten oder ein anderes Datum wählen.',
+  },
   'duplicate': {
     message: 'Dieser Eintrag existiert bereits für dieses Datum.',
     suggestion: 'Du kannst den bestehenden Eintrag bearbeiten oder ein anderes Datum wählen.',
@@ -160,7 +164,7 @@ export const FRONTEND_ERRORS = {
 
 /**
  * Prüft ob ein Fehler vom Backend stammt
- * Backend-Fehler haben typischerweise eine response-Eigenschaft
+ * Backend-Fehler haben typischerweise eine response-Eigenschaft oder status/data
  */
 function isBackendError(error: any): boolean {
   return !!(error?.response || error?.status || error?.data)
@@ -170,9 +174,16 @@ function isBackendError(error: any): boolean {
  * Prüft ob ein Fehler ein Netzwerkfehler ist
  */
 function isNetworkError(error: any): boolean {
+  // Wenn es ein Backend-Error ist (hat status), dann ist es kein Netzwerkfehler
+  if (error?.status) {
+    return false
+  }
+  
   return (
     error?.message?.toLowerCase().includes('network') ||
     error?.message?.toLowerCase().includes('timeout') ||
+    error?.message?.toLowerCase().includes('keine antwort') ||
+    error?.message?.toLowerCase().includes('keine verbindung') ||
     error?.code === 'ECONNABORTED' ||
     error?.code === 'ERR_NETWORK' ||
     !error?.response
@@ -183,20 +194,30 @@ function isNetworkError(error: any): boolean {
  * Extrahiert die Backend-Fehlermeldung aus verschiedenen Fehlerformaten
  */
 function extractBackendMessage(error: any): string | null {
+  // Format vom client.ts Interceptor: { message, status, data }
+  if (error.status && error.message) {
+    return error.message
+  }
+  
   // Axios Response Format
   if (error.response?.data) {
     const data = error.response.data
     return data.detail || data.message || data.error || null
   }
   
-  // Direktes Error-Objekt mit message
-  if (error.message) {
-    return error.message
+  // Data-Objekt mit detail/message
+  if (error.data && typeof error.data === 'object') {
+    return error.data.detail || error.data.message || error.data.error || null
   }
   
   // String als data
   if (typeof error.data === 'string') {
     return error.data
+  }
+  
+  // Direktes Error-Objekt mit message (nur wenn kein status vorhanden)
+  if (error.message && !error.status) {
+    return error.message
   }
   
   return null

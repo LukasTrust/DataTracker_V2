@@ -31,7 +31,7 @@ function Help() {
                 },
                 {
                   question: 'Wie funktioniert die automatische Eintrags-Erstellung?',
-                  answer: 'Wenn du bei einer Kategorie "Automatische Einträge erstellen" aktivierst, wird zu Beginn jedes neuen Monats automatisch ein Eintrag mit Wert 0 erstellt. Das ist praktisch für monatliche Tracking-Daten.'
+                  answer: 'Wenn du bei einer Kategorie "Automatische Einträge erstellen" aktivierst, wird am 1. jeden Monats um 00:05 Uhr automatisch ein Eintrag mit Wert 0 erstellt. Diese automatischen Einträge sammeln sich an (z.B. für Oktober, November, Dezember) und du kannst sie jederzeit in der Tabelle bearbeiten. Sobald du einen automatischen Eintrag bearbeitest, wird er zu einem normalen, manuellen Eintrag. Wichtig: Automatische Einträge werden NICHT in Berechnungen, Statistiken oder Grafiken berücksichtigt - sie erscheinen nur in der Tabelle als Platzhalter zum späteren Ausfüllen.'
                 },
                 {
                   question: 'Welche Funktionen bietet das Dashboard?',
@@ -52,6 +52,10 @@ function Help() {
                 {
                   question: 'Wie kann ich nach bestimmten Einträgen suchen?',
                   answer: 'In der Tabellenansicht stehen dir umfangreiche Filter zur Verfügung: Suche nach Kommentar, Filter nach Datum (von/bis) und nach Wert (min/max). Die Ergebnisse werden in Echtzeit aktualisiert.'
+                },
+                {
+                  question: 'Was passiert mit automatisch erstellten Einträgen?',
+                  answer: 'Automatische Einträge sind in der Tabelle mit einem "Auto" Badge gekennzeichnet. Sie werden NICHT in Berechnungen, Statistiken, Grafiken oder dem Dashboard berücksichtigt - nur manuell erstellte oder bearbeitete Einträge fließen in die Auswertungen ein. So verfälschen unausgefüllte Platzhalter deine Daten nicht. Sobald du einen automatischen Eintrag bearbeitest und speicherst, wird er automatisch zu einem normalen Eintrag und in alle Berechnungen einbezogen.'
                 },
               ].map((faq, index) => (
                 <div key={index} className="pb-4 border-b border-neutral-200 last:border-0">
