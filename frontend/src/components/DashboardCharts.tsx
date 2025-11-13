@@ -55,14 +55,27 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
     return { percentageChange, direction }
   }, [totalValueData])
 
-  // Calculate trend for sparen data
+  // Calculate trend for sparen data based on profit/loss percentage, not absolute value
   const sparenTrend = useMemo(() => {
     if (sparenData.length < 2) {
       return { percentageChange: 0, direction: 'neutral' as 'up' | 'down' | 'neutral' }
     }
-    const firstValue = sparenData[0].value
-    const lastValue = sparenData[sparenData.length - 1].value
-    const percentageChange = firstValue !== 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0
+    
+    // Calculate profit percentage for first and last data point
+    // Profit % = (Current Value - Deposits) / Deposits * 100
+    const firstPoint = sparenData[0]
+    const lastPoint = sparenData[sparenData.length - 1]
+    
+    const firstProfitPercent = firstPoint.deposits && firstPoint.deposits > 0 
+      ? ((firstPoint.value - firstPoint.deposits) / firstPoint.deposits) * 100 
+      : 0
+    
+    const lastProfitPercent = lastPoint.deposits && lastPoint.deposits > 0
+      ? ((lastPoint.value - lastPoint.deposits) / lastPoint.deposits) * 100
+      : 0
+    
+    // The trend is the change in profit percentage (not absolute value change)
+    const percentageChange = lastProfitPercent - firstProfitPercent
     
     let direction: 'up' | 'down' | 'neutral' = 'neutral'
     if (Math.abs(percentageChange) < 0.5) {
@@ -153,7 +166,7 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
               </p>
             </div>
             {sparenData.length >= 2 && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col items-end gap-1">
                 <span className={`text-sm font-semibold flex items-center gap-1 ${
                   sparenTrend.direction === 'up' ? 'text-green-600' : 
                   sparenTrend.direction === 'down' ? 'text-red-600' : 
@@ -165,7 +178,10 @@ function DashboardCharts({ totalValueData, sparenData, categoryComparison }: Das
                   {sparenTrend.direction === 'up' && '↑'}
                   {sparenTrend.direction === 'down' && '↓'}
                   {sparenTrend.direction === 'neutral' && '→'}
-                  {' '}{Math.abs(sparenTrend.percentageChange).toFixed(1)}%
+                  {' '}{Math.abs(sparenTrend.percentageChange).toFixed(1)}%p
+                </span>
+                <span className="text-xs text-neutral-500">
+                  Rendite-Entwicklung
                 </span>
               </div>
             )}

@@ -97,14 +97,45 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
         direction: 'neutral' as 'up' | 'down' | 'neutral',
         firstValue: 0,
         lastValue: 0,
-        trendLine: [] as { x: number; y: number }[]
+        trendLine: [] as { x: number; y: number }[],
+        slope: 0
       }
     }
 
     const firstValue = filteredEntries[0].value
     const lastValue = filteredEntries[filteredEntries.length - 1].value
     const absoluteChange = lastValue - firstValue
-    const percentageChange = firstValue !== 0 ? (absoluteChange / firstValue) * 100 : 0
+    
+    // For Sparen categories: Calculate trend based on profit percentage, not absolute value
+    let percentageChange: number
+    if (category.type === 'sparen') {
+      // Calculate cumulative deposits for first and last entry
+      let firstCumulativeDeposit = 0
+      let lastCumulativeDeposit = 0
+      
+      filteredEntries.forEach((entry, index) => {
+        const deposit = entry.deposit || 0
+        if (index === 0) {
+          firstCumulativeDeposit = deposit
+        }
+        lastCumulativeDeposit += deposit
+      })
+      
+      // Calculate profit percentage at start and end
+      const firstProfitPercent = firstCumulativeDeposit > 0 
+        ? ((firstValue - firstCumulativeDeposit) / firstCumulativeDeposit) * 100 
+        : 0
+      
+      const lastProfitPercent = lastCumulativeDeposit > 0
+        ? ((lastValue - lastCumulativeDeposit) / lastCumulativeDeposit) * 100
+        : 0
+      
+      // The percentage change is the difference in profit percentages
+      percentageChange = lastProfitPercent - firstProfitPercent
+    } else {
+      // For normal categories: use absolute value change
+      percentageChange = firstValue !== 0 ? (absoluteChange / firstValue) * 100 : 0
+    }
     
     // Bestimme Richtung mit Toleranz für "stabil"
     let direction: 'up' | 'down' | 'neutral' = 'neutral'
@@ -144,7 +175,7 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
       trendLine,
       slope
     }
-  }, [filteredEntries])
+  }, [filteredEntries, category.type])
   
   // Bereite Chart-Daten vor mit adaptiver Skalierung
   const chartData = useMemo(() => {
@@ -417,33 +448,44 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Prozentuale Veränderung - nur für normale Kategorien */}
-                {category.type !== 'sparen' && (
-                  <div>
-                    <div className="text-xs text-neutral-600 mb-2">Entwicklung</div>
-                    <div className="flex items-center gap-3">
-                      <div className={`text-4xl font-bold ${
-                        trendAnalysis.direction === 'up' ? 'text-green-600' : 
-                        trendAnalysis.direction === 'down' ? 'text-red-600' : 
-                        'text-neutral-500'
-                      }`}>
-                        {trendAnalysis.direction === 'up' && '↑'}
-                        {trendAnalysis.direction === 'down' && '↓'}
-                        {trendAnalysis.direction === 'neutral' && '→'}
-                        {' '}{Math.abs(trendAnalysis.percentageChange).toFixed(1)}%
-                      </div>
-                    </div>
-                    <div className={`text-sm font-medium mt-2 ${
-                      trendAnalysis.direction === 'up' ? 'text-green-700' : 
-                      trendAnalysis.direction === 'down' ? 'text-red-700' : 
-                      'text-neutral-600'
+                {/* Prozentuale Veränderung - für beide Kategorie-Typen */}
+                <div>
+                  <div className="text-xs text-neutral-600 mb-2">
+                    {category.type === 'sparen' ? 'Rendite-Entwicklung' : 'Entwicklung'}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`text-4xl font-bold ${
+                      trendAnalysis.direction === 'up' ? 'text-green-600' : 
+                      trendAnalysis.direction === 'down' ? 'text-red-600' : 
+                      'text-neutral-500'
                     }`}>
-                      {trendAnalysis.direction === 'up' && 'Steigender Trend'}
-                      {trendAnalysis.direction === 'down' && 'Fallender Trend'}
-                      {trendAnalysis.direction === 'neutral' && 'Stabiler Verlauf'}
+                      {trendAnalysis.direction === 'up' && '↑'}
+                      {trendAnalysis.direction === 'down' && '↓'}
+                      {trendAnalysis.direction === 'neutral' && '→'}
+                      {' '}{Math.abs(trendAnalysis.percentageChange).toFixed(1)}%
+                      {category.type === 'sparen' && 'p'}
                     </div>
                   </div>
-                )}
+                  <div className={`text-sm font-medium mt-2 ${
+                    trendAnalysis.direction === 'up' ? 'text-green-700' : 
+                    trendAnalysis.direction === 'down' ? 'text-red-700' : 
+                    'text-neutral-600'
+                  }`}>
+                    {category.type === 'sparen' ? (
+                      <>
+                        {trendAnalysis.direction === 'up' && 'Rendite verbessert sich'}
+                        {trendAnalysis.direction === 'down' && 'Rendite verschlechtert sich'}
+                        {trendAnalysis.direction === 'neutral' && 'Rendite stabil'}
+                      </>
+                    ) : (
+                      <>
+                        {trendAnalysis.direction === 'up' && 'Steigender Trend'}
+                        {trendAnalysis.direction === 'down' && 'Fallender Trend'}
+                        {trendAnalysis.direction === 'neutral' && 'Stabiler Verlauf'}
+                      </>
+                    )}
+                  </div>
+                </div>
 
                 {/* Absolute Veränderung */}
                 <div>
@@ -481,10 +523,17 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
               {/* Erklärungstext */}
               <div className="mt-4 pt-4 border-t border-blue-200">
                 <p className="text-xs text-neutral-600">
-                  Die Trend-Analyse vergleicht den <span className="font-semibold">ersten</span> mit dem <span className="font-semibold">letzten</span> Wert 
-                  im angezeigten Zeitraum ({filteredEntries.length} Einträge).
-                  {category.type === 'sparen' && (
-                    <span> Für Sparen-Kategorien wird die prozentuale Entwicklung nicht angezeigt, da sie durch unterschiedliche Einzahlungen verzerrt sein kann.</span>
+                  {category.type === 'sparen' ? (
+                    <>
+                      Die Rendite-Entwicklung zeigt die <span className="font-semibold">Veränderung der Performance</span> im Zeitraum ({filteredEntries.length} Einträge).
+                      Berechnung: Rendite % = (Aktueller Wert - Einzahlungen) / Einzahlungen × 100.
+                      Ein positiver Trend bedeutet, dass sich die Rendite verbessert hat – unabhängig von den Einzahlungen.
+                    </>
+                  ) : (
+                    <>
+                      Die Trend-Analyse vergleicht den <span className="font-semibold">ersten</span> mit dem <span className="font-semibold">letzten</span> Wert 
+                      im angezeigten Zeitraum ({filteredEntries.length} Einträge).
+                    </>
                   )}
                 </p>
               </div>

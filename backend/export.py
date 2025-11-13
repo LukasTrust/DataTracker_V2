@@ -96,6 +96,8 @@ def generate_workbook(
     Generate Excel workbook with category data.
     
     Creates one sheet per category with all entries and metadata.
+    When exporting all categories or multiple categories, also creates
+    a summary sheet with category metadata.
     
     Args:
         category_ids: List of category IDs to export (None = all)
@@ -139,6 +141,29 @@ def generate_workbook(
             # Remove default sheet if we have categories
             if "Sheet" in wb.sheetnames and len(cats) > 0:
                 wb.remove(wb["Sheet"])
+            
+            # Create summary sheet if exporting all categories or multiple categories
+            # (but not for single category export)
+            is_multi_category_export = category_ids is None or len(category_ids) > 1
+            if is_multi_category_export:
+                summary_ws = wb.create_sheet(title="Übersicht", index=0)
+                summary_headers = ["Kategorie", "Typ", "Einheit", "Auto-Erstellung"]
+                summary_ws.append(summary_headers)
+                _apply_header_formatting(summary_ws, summary_headers)
+                
+                # Add category metadata
+                for cat in cats:
+                    type_display = "Sparkategorie" if cat.type == "sparen" else "Normal"
+                    auto_create_display = "Ja" if cat.auto_create else "Nein"
+                    summary_ws.append([
+                        cat.name,
+                        type_display,
+                        cat.unit or "",
+                        auto_create_display
+                    ])
+                
+                _auto_adjust_column_widths(summary_ws)
+                logger.debug("Summary sheet created with category metadata")
             
             # Create sheet for each category
             for cat in cats:
