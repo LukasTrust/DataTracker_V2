@@ -157,9 +157,10 @@ function CategoryTableRow({
   // View Mode
   return (
     <tr
-      className="border-b border-neutral-200 hover:bg-neutral-50 transition-colors"
+      className="border-b border-neutral-200 hover:bg-neutral-50 transition-colors cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={() => onEditStart(entry)}
     >
       {/* Datum */}
       <td className={`${cellClass} font-medium text-neutral-900`}>
@@ -199,7 +200,10 @@ function CategoryTableRow({
             variant="secondary"
             size="sm"
             icon={<Edit2 className="w-4 h-4" />}
-            onClick={() => onEditStart(entry)}
+            onClick={(e) => {
+              e.stopPropagation() // Verhindert doppeltes Auslösen
+              onEditStart(entry)
+            }}
           >
             Bearbeiten
           </Button>
@@ -207,7 +211,10 @@ function CategoryTableRow({
             variant="secondary"
             size="sm"
             icon={<Trash2 className="w-4 h-4" />}
-            onClick={() => onDelete(entry.id)}
+            onClick={(e) => {
+              e.stopPropagation() // Verhindert, dass onClick der Row ausgelöst wird
+              onDelete(entry.id)
+            }}
             className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             Löschen

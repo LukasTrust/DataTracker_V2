@@ -54,9 +54,9 @@ ENV PYTHONPATH=/app
 # Port exponieren (intern)
 EXPOSE 8000
 
-# Health Check Endpoint
+# Health Check Endpoint - verwende curl statt Python requests
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)" || exit 1
 
 # Datenbank initialisieren und Server starten
 CMD ["sh", "-c", "chown -R appuser:appuser /app/data || true; cd /app && python -m backend.migrate && uvicorn backend.main:app --host 0.0.0.0 --port 8000"]

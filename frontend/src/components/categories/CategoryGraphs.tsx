@@ -417,31 +417,33 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Prozentuale Veränderung */}
-                <div>
-                  <div className="text-xs text-neutral-600 mb-2">Entwicklung</div>
-                  <div className="flex items-center gap-3">
-                    <div className={`text-4xl font-bold ${
-                      trendAnalysis.direction === 'up' ? 'text-green-600' : 
-                      trendAnalysis.direction === 'down' ? 'text-red-600' : 
-                      'text-neutral-500'
+                {/* Prozentuale Veränderung - nur für normale Kategorien */}
+                {category.type !== 'sparen' && (
+                  <div>
+                    <div className="text-xs text-neutral-600 mb-2">Entwicklung</div>
+                    <div className="flex items-center gap-3">
+                      <div className={`text-4xl font-bold ${
+                        trendAnalysis.direction === 'up' ? 'text-green-600' : 
+                        trendAnalysis.direction === 'down' ? 'text-red-600' : 
+                        'text-neutral-500'
+                      }`}>
+                        {trendAnalysis.direction === 'up' && '↑'}
+                        {trendAnalysis.direction === 'down' && '↓'}
+                        {trendAnalysis.direction === 'neutral' && '→'}
+                        {' '}{Math.abs(trendAnalysis.percentageChange).toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className={`text-sm font-medium mt-2 ${
+                      trendAnalysis.direction === 'up' ? 'text-green-700' : 
+                      trendAnalysis.direction === 'down' ? 'text-red-700' : 
+                      'text-neutral-600'
                     }`}>
-                      {trendAnalysis.direction === 'up' && '↑'}
-                      {trendAnalysis.direction === 'down' && '↓'}
-                      {trendAnalysis.direction === 'neutral' && '→'}
-                      {' '}{Math.abs(trendAnalysis.percentageChange).toFixed(1)}%
+                      {trendAnalysis.direction === 'up' && 'Steigender Trend'}
+                      {trendAnalysis.direction === 'down' && 'Fallender Trend'}
+                      {trendAnalysis.direction === 'neutral' && 'Stabiler Verlauf'}
                     </div>
                   </div>
-                  <div className={`text-sm font-medium mt-2 ${
-                    trendAnalysis.direction === 'up' ? 'text-green-700' : 
-                    trendAnalysis.direction === 'down' ? 'text-red-700' : 
-                    'text-neutral-600'
-                  }`}>
-                    {trendAnalysis.direction === 'up' && 'Steigender Trend'}
-                    {trendAnalysis.direction === 'down' && 'Fallender Trend'}
-                    {trendAnalysis.direction === 'neutral' && 'Stabiler Verlauf'}
-                  </div>
-                </div>
+                )}
 
                 {/* Absolute Veränderung */}
                 <div>
@@ -481,6 +483,9 @@ function CategoryGraphs({ entries, category }: CategoryGraphsProps) {
                 <p className="text-xs text-neutral-600">
                   Die Trend-Analyse vergleicht den <span className="font-semibold">ersten</span> mit dem <span className="font-semibold">letzten</span> Wert 
                   im angezeigten Zeitraum ({filteredEntries.length} Einträge).
+                  {category.type === 'sparen' && (
+                    <span> Für Sparen-Kategorien wird die prozentuale Entwicklung nicht angezeigt, da sie durch unterschiedliche Einzahlungen verzerrt sein kann.</span>
+                  )}
                 </p>
               </div>
             </Card>

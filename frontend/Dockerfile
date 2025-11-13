@@ -44,9 +44,9 @@ USER nginx
 # Port exponieren
 EXPOSE 3000
 
-# Health Check
+# Health Check - prüfe die Hauptseite statt /health
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:3000/health || exit 1
+    CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
 
 # Nginx starten
 CMD ["nginx", "-g", "daemon off;"]

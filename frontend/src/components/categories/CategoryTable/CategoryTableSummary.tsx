@@ -21,13 +21,15 @@ function CategoryTableSummary({ entries, filteredEntries, category }: CategoryTa
   const average = count > 0 ? sum / count : 0
   
   // Sparen-spezifische Berechnungen
-  // WICHTIG: Für Gewinn/Verlust IMMER alle Entries verwenden (nicht nur gefilterte)
-  // Aktueller Wert = neuester Eintrag (sortiert nach Datum)
-  const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date))
+  // WICHTIG: Nur nicht-auto-generierte Entries verwenden (wie bei Graphen)
+  const nonAutoEntries = entries.filter(e => !e.auto_generated)
+  
+  // Aktueller Wert = neuester nicht-auto-generierter Eintrag (sortiert nach Datum)
+  const sortedEntries = [...nonAutoEntries].sort((a, b) => b.date.localeCompare(a.date))
   const currentValue = sortedEntries.length > 0 ? sortedEntries[0].value : 0
   
-  // Summe ALLER Einzahlungen
-  const totalDeposit = entries.reduce((acc, entry) => acc + (entry.deposit || 0), 0)
+  // Summe ALLER Einzahlungen (nur nicht-auto-generierte Einträge)
+  const totalDeposit = nonAutoEntries.reduce((acc, entry) => acc + (entry.deposit || 0), 0)
   
   // Gewinn/Verlust = Aktueller Wert - Summe aller Einzahlungen
   const profitLoss = currentValue - totalDeposit
